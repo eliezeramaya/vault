@@ -1,10 +1,7 @@
 name: Web - Build & Deploy
-
 on:
   push:
-    paths:
-      - 'apps/web/**'
-      - '.github/workflows/web-deploy.yml'
+    paths: ['apps/web/**', '.github/workflows/web-deploy.yml']
     branches: [ main ]
   workflow_dispatch:
 
@@ -23,20 +20,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 18
+        with: { node-version: 18 }
       - name: Install
-        run: |
-          cd apps/web
-          npm ci || npm i
+        run: cd apps/web && npm ci || npm i
       - name: Build
-        run: |
-          cd apps/web
-          npm run build
+        run: cd apps/web && npm run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
-        with:
-          path: apps/web/dist
+        with: { path: apps/web/dist }
   deploy:
     needs: build
     runs-on: ubuntu-latest
