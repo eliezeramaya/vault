@@ -1,0 +1,15 @@
+name: Feature request
+description: Pide una mejora/funcionalidad
+title: "[Feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: value
+    attributes: { label: Valor para el usuario, placeholder: ¿Qué problema resuelve? }
+    validations: { required: true }
+  - type: textarea
+    id: spec
+    attributes: { label: Especificación breve, placeholder: Criterios de aceptación }
+  - type: textarea
+    id: notes
+    attributes: { label: Notas/Dependencias }
