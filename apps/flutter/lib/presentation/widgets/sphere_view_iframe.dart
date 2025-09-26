@@ -4,7 +4,7 @@ import 'dart:html' as html;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
-const String kWebAppUrl = 'https://<tu_usuario>.github.io/<tu_repo_pages>/';
+const String kWebAppUrl = 'https://eliezeramaya.github.io/vault/';
 
 class SphereViewPlatform extends StatelessWidget {
   const SphereViewPlatform({super.key});
