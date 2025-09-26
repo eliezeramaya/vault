@@ -25,6 +25,10 @@ jobs:
         run: cd apps/web && npm ci || npm i
       - name: Build
         run: cd apps/web && npm run build
+      - name: Add 404 fallback (SPA)
+        run: cp apps/web/dist/index.html apps/web/dist/404.html
+      - name: List dist (debug)
+        run: ls -la apps/web/dist
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with: { path: apps/web/dist }
