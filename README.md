@@ -1,5 +1,9 @@
 # timmr_sphere (monorepo)
 
+[![Web - Build & Deploy](https://github.com/eliezeramaya/vault/actions/workflows/web-deploy.yml/badge.svg)](https://github.com/eliezeramaya/vault/actions/workflows/web-deploy.yml)
+
+Public site: https://eliezeramaya.github.io/vault/
+
 Apps:
 - `apps/web` — React + Three.js (esfera + heatmap RPB).
 - `apps/flutter` — Shell Flutter (Android/iOS/Web/Windows) que incrusta la web.
