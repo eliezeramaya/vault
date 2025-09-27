@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 
 import HeatmapControls from './HeatmapControls';
+import EditIslandSheet from './EditIslandSheet';
 import { HeatmapPass } from '../lib/heatmap/HeatmapPass';
 import { createHeatLayer } from '../lib/heatmap/HeatmapLayer';
 
@@ -52,6 +53,50 @@ export default function Globe({ onHelp, onReady, onApi }) {
 
   const [opacity, setOpacity] = useState(0.85);
   const [sigmaPx, setSigmaPx] = useState(28);
+
+function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0x2a3a7a, opacity = 0.35 } = {}) {
+  const group = new THREE.Group();
+  const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+
+  // Parallels (constant latitude)
+  for (let i = 1; i < parallels; i++) {
+    const lat = -Math.PI/2 + (i * Math.PI / parallels);
+    const r = Math.cos(lat) * radius;
+    const y = Math.sin(lat) * radius;
+    const segs = 128;
+    const pts = [];
+    for (let s=0; s<=segs; s++) {
+      const theta = (s / segs) * Math.PI * 2;
+      pts.push(new THREE.Vector3(
+        r * Math.cos(theta),
+        y,
+        r * Math.sin(theta)
+      ));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const line = new THREE.Line(geo, mat);
+    group.add(line);
+  }
+
+  // Meridians (constant longitude)
+  for (let j = 0; j < meridians; j++) {
+    const lon = (j / meridians) * Math.PI * 2;
+    const segs = 128;
+    const pts = [];
+    for (let s=0; s<=segs; s++) {
+      const t = -Math.PI/2 + (s / segs) * Math.PI; // lat from -90 to 90
+      const x = radius * Math.cos(t) * Math.cos(lon);
+      const y = radius * Math.sin(t);
+      const z = radius * Math.cos(t) * Math.sin(lon);
+      pts.push(new THREE.Vector3(x,y,z));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const line = new THREE.Line(geo, mat);
+    group.add(line);
+  }
+
+  return group;
+}
   const [radiusPx, setRadiusPx] = useState(32);
   const [reverse, setReverse] = useState(false);
   // Vista
@@ -66,6 +111,11 @@ export default function Globe({ onHelp, onReady, onApi }) {
   const targetOffsetRef = useRef(new THREE.Vector3(0,0,0));
   const [toast, setToast] = useState(false);
   const userInteractingRef = useRef(false);
+  // Hover/selección
+  const [hoveredIdx, setHoveredIdx] = useState(-1);
+  const [selectedIdx, setSelectedIdx] = useState(-1);
+  const hoveredIdxRef = useRef(-1);
+  const selectedIdxRef = useRef(-1);
 
   const autoRotateRef = useRef(true);
   useEffect(()=>{ autoRotateRef.current = autoRotate }, [autoRotate]);
@@ -113,11 +163,13 @@ export default function Globe({ onHelp, onReady, onApi }) {
     const sphere = new THREE.Mesh(sphereGeom, sphereMat);
     scene.add(sphere);
 
-    // Grid (paralelos/meridianos)
-  const grid = new THREE.GridHelper(SPHERE_RADIUS*2, 24, 0x2a3a7a, 0x1b244a);
-    grid.rotation.x = Math.PI/2; grid.material.transparent = true; grid.material.opacity = .35;
-    scene.add(grid);
-  gridRef.current = grid;
+    // Grid esférico (meridianos y paralelos)
+    const sphericalGrid = createSphericalGrid(SPHERE_RADIUS + 0.003, 15, 15, {
+      color: 0x2a3a7a,
+      opacity: 0.35
+    });
+    scene.add(sphericalGrid);
+    gridRef.current = sphericalGrid;
 
     // Nodos ejemplo (estado vacío con valor)
     const nodesData = [
@@ -127,42 +179,62 @@ export default function Globe({ onHelp, onReady, onApi }) {
       { id:'Relaciones',  lat: -22, lon: -120, priority: 5 },
       { id:'Aprendizaje', lat:  12, lon:  70, priority: 7 },
     ];
+    // Helper para símbolo dentro del círculo (emoji inicial o primera letra)
+    function chipSymbol(text){
+      if (!text) return '?';
+      const first = text.trim().split(/\s+/)[0];
+      // Si empieza con un emoji (heurística simple: contiene símbolos no alfanuméricos)
+      if (/^[\p{Emoji}\p{So}]/u.test(first)) return first;
+      return first.charAt(0).toUpperCase();
+    }
+
     // Crear chips circulares (HTML) para cada nodo
     const nodes = nodesData.map((n, idx) => {
       if (!labelLayerEl) return n;
       const chip = document.createElement('div');
-      chip.textContent = n.id;
+      chip.textContent = chipSymbol(n.id);
       chip.setAttribute('data-node-index', String(idx));
+      chip.title = n.id;
       Object.assign(chip.style, {
         position: 'absolute',
-        transform: 'translate(-50%, -100%)',
-        padding: '8px 12px',
-        minHeight: '36px',
+        transform: 'translate(-50%, -50%)',
+        width: '44px',
+        height: '44px',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '12px',
+        fontSize: '18px',
         letterSpacing: '.2px',
         color: '#EAEAEA',
         background: 'rgba(10,12,24,.72)',
         border: '1px solid rgba(255,255,255,.10)',
-        borderRadius: '9999px',
+        borderRadius: '50%',
         boxShadow: '0 6px 20px rgba(0,0,0,.35)',
         pointerEvents: 'auto',
         whiteSpace: 'nowrap',
         zIndex: 7,
         cursor: 'grab',
-        userSelect: 'none'
+        userSelect: 'none',
+        touchAction: 'none'
       });
+      chip.addEventListener('mouseenter', ()=> { setHoveredIdx(idx); hoveredIdxRef.current = idx; });
+      chip.addEventListener('mouseleave', ()=> { setHoveredIdx(v => v===idx ? -1 : v); if (hoveredIdxRef.current === idx) hoveredIdxRef.current = -1; });
+      chip.addEventListener('click', (e)=> { e.stopPropagation(); setSelectedIdx(idx); selectedIdxRef.current = idx; });
       labelLayerEl.appendChild(chip);
-      return { ...n, el: chip };
+      // sombra de contacto (anillo) sobre la esfera
+      const ringR = 0.18;
+      const ringGeom = new THREE.RingGeometry(ringR*0.55, ringR, 48);
+      const shadowMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.25, side:THREE.DoubleSide, depthWrite:false });
+      const shadow = new THREE.Mesh(ringGeom, shadowMat);
+      scene.add(shadow);
+      return { ...n, el: chip, shadow };
     });
     nodesRef.current = nodes;
 
     // Arco elevado demo (A->C)
-    const A = latLonToV3(nodesData[0].lat, nodesData[0].lon, SPHERE_RADIUS + LABEL_OFFSET);
-    const C = latLonToV3(nodesData[2].lat, nodesData[2].lon, SPHERE_RADIUS + LABEL_OFFSET);
-    const arcPts = greatCircleElevated(A, C, SPHERE_RADIUS + ISLAND_OFFSET, ARC_LIFT, 160);
+  const A = latLonToV3(nodesData[0].lat, nodesData[0].lon, SPHERE_RADIUS + LABEL_OFFSET);
+  const C = latLonToV3(nodesData[2].lat, nodesData[2].lon, SPHERE_RADIUS + LABEL_OFFSET);
+  const arcPts = greatCircleElevated(A, C, SPHERE_RADIUS + LABEL_OFFSET, ARC_LIFT, 160);
     const arcGeom = new THREE.BufferGeometry().setFromPoints(arcPts);
     const arcMat = new THREE.LineDashedMaterial({ color:0xff77aa, transparent:true, opacity:.95, dashSize:.22, gapSize:.15 });
     const arc = new THREE.Line(arcGeom, arcMat);
@@ -206,16 +278,24 @@ export default function Globe({ onHelp, onReady, onApi }) {
       if (labelLayerEl) {
         const idx = nodesRef.current.length;
         const chip = document.createElement('div');
-        chip.textContent = node.id;
+        chip.textContent = chipSymbol(node.id);
         chip.setAttribute('data-node-index', String(idx));
+        chip.title = node.id;
         Object.assign(chip.style, {
-          position: 'absolute', transform: 'translate(-50%, -100%)', padding: '8px 12px', minHeight: '36px',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', letterSpacing: '.2px',
-          color: '#EAEAEA', background: 'rgba(10,12,24,.72)', border: '1px solid rgba(255,255,255,.10)', borderRadius: '9999px',
-          boxShadow: '0 6px 20px rgba(0,0,0,.35)', pointerEvents: 'auto', whiteSpace: 'nowrap', zIndex: 7, cursor: 'grab', userSelect: 'none'
+          position: 'absolute', transform: 'translate(-50%, -50%)', width: '44px', height: '44px',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', letterSpacing: '.2px',
+          color: '#EAEAEA', background: 'rgba(10,12,24,.72)', border: '1px solid rgba(255,255,255,.10)', borderRadius: '50%',
+          boxShadow: '0 6px 20px rgba(0,0,0,.35)', pointerEvents: 'auto', whiteSpace: 'nowrap', zIndex: 7, cursor: 'grab', userSelect: 'none', touchAction: 'none'
         });
+        chip.addEventListener('mouseenter', ()=> { setHoveredIdx(idx); hoveredIdxRef.current = idx; });
+        chip.addEventListener('mouseleave', ()=> { setHoveredIdx(v => v===idx ? -1 : v); if (hoveredIdxRef.current === idx) hoveredIdxRef.current = -1; });
+        chip.addEventListener('click', (e)=> { e.stopPropagation(); setSelectedIdx(idx); selectedIdxRef.current = idx; });
         labelLayerEl.appendChild(chip);
-        nodesRef.current.push({ ...node, el: chip });
+        // sombra
+        const ringR = 0.18; const ringGeom = new THREE.RingGeometry(ringR*0.55, ringR, 48);
+        const shadowMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.25, side:THREE.DoubleSide, depthWrite:false });
+        const shadow = new THREE.Mesh(ringGeom, shadowMat); scene.add(shadow);
+        nodesRef.current.push({ ...node, el: chip, shadow });
       } else {
         nodesRef.current.push(node);
       }
@@ -295,7 +375,7 @@ export default function Globe({ onHelp, onReady, onApi }) {
         if (idx === 0 || idx === 2) {
           const A2 = latLonToV3(nodesRef.current[0].lat, nodesRef.current[0].lon, SPHERE_RADIUS + LABEL_OFFSET);
           const C2 = latLonToV3(nodesRef.current[2].lat, nodesRef.current[2].lon, SPHERE_RADIUS + LABEL_OFFSET);
-          const newPts = greatCircleElevated(A2, C2, SPHERE_RADIUS + ISLAND_OFFSET, ARC_LIFT, 160);
+          const newPts = greatCircleElevated(A2, C2, SPHERE_RADIUS + LABEL_OFFSET, ARC_LIFT, 160);
           arc.geometry.setFromPoints(newPts); arc.computeLineDistances();
         }
         refreshHeat();
@@ -395,7 +475,8 @@ export default function Globe({ onHelp, onReady, onApi }) {
       camera.lookAt(targetOffsetRef.current);
       // Proyectar y ubicar chips
       nodesRef.current.forEach((n, idx) => {
-        const base = latLonToV3(n.lat, n.lon, SPHERE_RADIUS + LABEL_OFFSET);
+        const lift = (idx===hoveredIdxRef.current ? 0.05 : 0) + (idx===selectedIdxRef.current ? 0.06 : 0);
+        const base = latLonToV3(n.lat, n.lon, SPHERE_RADIUS + LABEL_OFFSET + lift);
         const ndc = base.clone().project(camera);
         const w = renderer.domElement.clientWidth;
         const h = renderer.domElement.clientHeight;
@@ -410,10 +491,40 @@ export default function Globe({ onHelp, onReady, onApi }) {
             el.style.display = 'inline-flex';
             el.style.left = `${x}px`;
             el.style.top = `${y}px`;
+            el.style.boxShadow = (idx===hoveredIdxRef.current || idx===selectedIdxRef.current)
+              ? '0 10px 30px rgba(0,0,0,.55), 0 0 0 2px rgba(159,180,255,.8)'
+              : '0 6px 20px rgba(0,0,0,.35)';
+            el.style.border = (idx===selectedIdxRef.current)
+              ? '1px solid rgba(159,180,255,.85)'
+              : '1px solid rgba(255,255,255,.10)';
             // opcional: escalar ligeramente según distancia a borde para mayor legibilidad
           }
         }
+        // sombra de contacto en la esfera
+        if (n.shadow) {
+          const baseSurf = latLonToV3(n.lat, n.lon, SPHERE_RADIUS + 0.01);
+          const normal = baseSurf.clone().normalize();
+          n.shadow.position.copy(baseSurf);
+          n.shadow.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), normal);
+          n.shadow.material.opacity = (idx===hoveredIdxRef.current || idx===selectedIdxRef.current) ? 0.42 : 0.25;
+        }
       });
+      // Guía desde superficie hasta chip seleccionado
+      if (selectedIdxRef.current >= 0 && nodesRef.current[selectedIdxRef.current]) {
+        if (!guideRef) guideRef = { current: null };
+        if (!guideRef.current) {
+          const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+          const m = new THREE.LineBasicMaterial({ color: 0x9fb4ff, transparent:true, opacity:0.85 });
+          guideRef.current = new THREE.Line(g, m); guideRef.current.renderOrder = 3; scene.add(guideRef.current);
+        }
+        const n = nodesRef.current[selectedIdxRef.current];
+        const p0 = latLonToV3(n.lat, n.lon, SPHERE_RADIUS + 0.01);
+        const p1 = latLonToV3(n.lat, n.lon, SPHERE_RADIUS + LABEL_OFFSET + 0.06);
+        guideRef.current.geometry.setFromPoints([p0, p1]);
+      } else if (guideRef && guideRef.current) {
+        if (guideRef.current.parent) guideRef.current.parent.remove(guideRef.current);
+        guideRef.current = null;
+      }
       arc.material.dashOffset = -(t * 0.6);
       renderer.render(scene, camera);
       if (firstFrame) {
@@ -456,6 +567,9 @@ export default function Globe({ onHelp, onReady, onApi }) {
           labelLayerEl.removeChild(labelLayerEl.firstChild);
         }
       }
+      // limpiar sombras y guía
+      nodesRef.current.forEach(n=>{ if (n.shadow && n.shadow.parent) n.shadow.parent.remove(n.shadow); });
+      if (guideRef && guideRef.current && guideRef.current.parent) guideRef.current.parent.remove(guideRef.current);
     };
   }, []);
 
@@ -484,6 +598,31 @@ export default function Globe({ onHelp, onReady, onApi }) {
           Usa 1 dedo para rotar · 2 dedos para mover · Pinza para zoom
         </div>
       )}
+      <EditIslandSheet
+        open={selectedIdx>=0}
+        node={selectedIdx>=0 ? nodesRef.current[selectedIdx] : null}
+        onClose={()=> setSelectedIdx(-1)}
+        onSave={({ title, zone, priority })=>{
+          const idx = selectedIdx; if (idx<0) return;
+          // lightweight update: only title and priority; lat/lon by zone TBD
+          const node = nodesRef.current[idx];
+          if (title != null) { node.id = title; if (node.el) { node.el.textContent = (title||'').trim().charAt(0).toUpperCase(); node.el.title = title; } }
+          if (priority != null) node.priority = priority;
+          setSelectedIdx(-1);
+        }}
+        onConnect={()=>{/* will be wired in next step */}}
+        onDuplicate={()=>{/* next step */}}
+        onDelete={()=>{/* next step */}}
+        onFocus={()=>{
+          const idx = selectedIdx; if (idx<0) return;
+          const n = nodesRef.current[idx];
+          const v = latLonToV3(n.lat, n.lon, 1).normalize();
+          const yaw = Math.atan2(v.z, v.x);
+          const pitch = Math.asin(v.y);
+          yawRef.current = yaw; pitchRef.current = pitch;
+          setSelectedIdx(-1);
+        }}
+      />
       <HeatmapControls
         // Calor
         opacity={opacity} sigmaPx={sigmaPx} radiusPx={radiusPx} reverse={reverse}
