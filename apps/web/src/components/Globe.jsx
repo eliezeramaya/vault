@@ -42,11 +42,13 @@ const greatCircleElevated = (a, b, baseRadius, lift = 0.18, segs = 128) => {
   return pts;
 };
 
-export default function Globe() {
+export default function Globe({ onHelp, onReady }) {
   const mountRef = useRef(null);
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
   const dragging = useRef({ active:false, island:null });
+  const onReadyRef = useRef(onReady);
+  useEffect(()=>{ onReadyRef.current = onReady }, [onReady]);
 
   const [opacity, setOpacity] = useState(0.85);
   const [sigmaPx, setSigmaPx] = useState(28);
@@ -205,6 +207,7 @@ export default function Globe() {
 
     // Loop
     const clock = new THREE.Clock();
+    let firstFrame = true;
     function animate() {
       const t = clock.getElapsedTime();
       scene.rotation.y += ROTATION_SPEED * 0.01;
@@ -217,6 +220,15 @@ export default function Globe() {
       });
       arc.material.dashOffset = -(t * 0.6);
       renderer.render(scene, camera);
+      if (firstFrame) {
+        firstFrame = false;
+        // Notify that the scene rendered at least once
+        const cb = onReadyRef.current;
+        if (typeof cb === 'function') {
+          // Defer to next tick to avoid layout thrash
+          setTimeout(() => cb(), 0);
+        }
+      }
       requestAnimationFrame(animate);
     }
     animate();
@@ -262,6 +274,7 @@ export default function Globe() {
       <HeatmapControls
         opacity={opacity} sigmaPx={sigmaPx} radiusPx={radiusPx} reverse={reverse}
         onOpacity={setOpacity} onSigma={setSigmaPx} onRadius={setRadiusPx} onReverse={setReverse}
+        onHelp={onHelp}
       />
     </div>
   );

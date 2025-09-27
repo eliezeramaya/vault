@@ -3,6 +3,7 @@ import React, { useRef } from "react";
 export default function HeatmapControls({
   opacity, sigmaPx, radiusPx, reverse,
   onOpacity, onSigma, onRadius, onReverse,
+  onHelp
 }) {
   const firstControlRef = useRef(null);
   const panel = {
@@ -26,21 +27,11 @@ export default function HeatmapControls({
   const slider = { width: "100%", accentColor: "#ff6aa8", cursor: "pointer" };
   const toggleWrap = { display: "flex", alignItems: "center", gap: 10, marginTop: 6 };
 
-  const onPanelKeyDown = (e) => {
-    if ((e.key === 'Enter' || e.key === ' ') && e.currentTarget === e.target) {
-      e.preventDefault();
-      firstControlRef.current?.focus();
-    }
-  };
-
   return (
     <div
       style={panel}
       role="region"
       aria-labelledby="hudTitle"
-      tabIndex={0}
-      onKeyDown={onPanelKeyDown}
-      title="Controles de heatmap (pulse Enter para enfocar)"
       data-hud
     >
       <style>{`
@@ -52,9 +43,27 @@ export default function HeatmapControls({
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 1px, 1px); white-space: nowrap; border: 0; }
       `}</style>
 
-      <h2 id="hudTitle" style={{ fontWeight: 700, margin: 0, marginBottom: 8, letterSpacing: .3, fontSize: 14 }}>
-        Heatmap • Azul → Rosa → Rojo
-      </h2>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, marginBottom:8}}>
+        <h2 id="hudTitle" style={{ fontWeight: 700, margin: 0, letterSpacing: .3, fontSize: 14 }}>
+          Heatmap • Azul → Rosa → Rojo
+        </h2>
+        <button
+          type="button"
+          onClick={onHelp}
+          title="Ver onboarding"
+          aria-label="Abrir guía rápida"
+          style={{ background:'transparent', color:'#9fb4ff', border:'1px solid rgba(159,180,255,.35)', padding:'4px 8px', borderRadius:8, fontSize:12, cursor:'pointer' }}
+        >¿?</button>
+      </div>
+      <button
+        type="button"
+        onClick={() => firstControlRef.current?.focus()}
+        style={{
+          background:'transparent', color:'#9fb4ff', border:'1px dashed rgba(159,180,255,.35)',
+          padding:'4px 8px', borderRadius:8, fontSize:12, cursor:'pointer', marginBottom:8
+        }}
+        aria-label="Enfocar el primer control del panel"
+      >Enfocar controles</button>
 
       <div style={row}>
         <label htmlFor="opacityRange" style={label}>Opacidad</label>
