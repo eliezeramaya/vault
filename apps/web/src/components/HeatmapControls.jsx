@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 
 export default function HeatmapControls({
+  // Calor
   opacity, sigmaPx, radiusPx, reverse,
   onOpacity, onSigma, onRadius, onReverse,
+  // Vista
+  autoRotate, showGrid, showLabels,
+  onAutoRotate, onShowGrid, onShowLabels,
   onHelp
 }) {
   const firstControlRef = useRef(null);
@@ -55,10 +59,10 @@ export default function HeatmapControls({
     fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
     zIndex: 10,
   };
-  const row = { display: "grid", gridTemplateColumns: "96px 1fr 56px", alignItems: "center", gap: 10, marginBottom: 10 };
+  const row = { display: "grid", gridTemplateColumns: "96px 1fr 56px", alignItems: "center", gap: 12, marginBottom: 12 };
   const label = { fontSize: 12, letterSpacing: .2, opacity: .9 };
   const val = { fontSize: 12, textAlign: "right", opacity: .9 };
-  const slider = { width: "100%", accentColor: "#ff6aa8", cursor: "pointer", touchAction: 'none' };
+  const slider = { width: "100%", height: 44, accentColor: "#ff6aa8", cursor: "pointer", touchAction: 'none', WebkitAppearance:'none', background:'transparent' };
   const toggleWrap = { display: "flex", alignItems: "center", gap: 10, marginTop: 6 };
 
   return (
@@ -78,16 +82,14 @@ export default function HeatmapControls({
       `}</style>
 
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, marginBottom: isCompact ? 4 : 8}}>
-        <h2 id="hudTitle" style={{ fontWeight: 700, margin: 0, letterSpacing: .3, fontSize: 14 }}>
-          Heatmap • Azul → Rosa → Rojo
-        </h2>
-        <div style={{display:'flex', gap:6}}>
+        <h2 id="hudTitle" style={{ fontWeight: 700, margin: 0, letterSpacing: .3, fontSize: 14 }}>Controles</h2>
+        <div style={{display:'flex', gap:12}}>
           <button
             type="button"
             onClick={onHelp}
             title="Ver onboarding"
             aria-label="Abrir guía rápida"
-            style={{ background:'transparent', color:'#9fb4ff', border:'1px solid rgba(159,180,255,.35)', padding:'4px 8px', borderRadius:8, fontSize:12, cursor:'pointer' }}
+            style={{ background:'transparent', color:'#9fb4ff', border:'1px solid rgba(159,180,255,.35)', padding:'10px 12px', minWidth:44, minHeight:44, borderRadius:10, fontSize:14, cursor:'pointer' }}
           >¿?</button>
           {isCompact && (
             <button
@@ -96,7 +98,7 @@ export default function HeatmapControls({
               aria-expanded={expanded}
               aria-controls="hudControlsBody"
               title={expanded? 'Colapsar controles' : 'Expandir controles'}
-              style={{ background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.25)', padding:'4px 8px', borderRadius:8, fontSize:12, cursor:'pointer' }}
+              style={{ background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.25)', padding:'10px 12px', minWidth:44, minHeight:44, borderRadius:10, fontSize:14, cursor:'pointer' }}
             >{expanded? '▼' : '▲'}</button>
           )}
         </div>
@@ -115,6 +117,9 @@ export default function HeatmapControls({
 
       {/* Body */}
       <div id="hudControlsBody" style={{ display: expanded ? 'block' : 'none' }}>
+      {/* Sección: Calor */}
+      <div style={{marginTop:8, marginBottom:10}}>
+  <div style={{fontSize:12, fontWeight:800, letterSpacing:.3, opacity:.9, marginBottom:8, textTransform:'uppercase'}}>Calor</div>
 
       <div style={row}>
         <label htmlFor="opacityRange" style={label}>Opacidad</label>
@@ -177,7 +182,7 @@ export default function HeatmapControls({
         <div style={val} aria-live="polite" aria-atomic="true">{radiusPx}px</div>
       </div>
 
-      <div style={toggleWrap}>
+      <div style={{...toggleWrap, gap:12}}>
         <input
           id="revPal"
           type="checkbox"
@@ -185,10 +190,31 @@ export default function HeatmapControls({
           onChange={(e)=>onReverse(e.target.checked)}
           aria-labelledby="revPalLbl"
           title="Invertir la paleta de colores"
+          style={{ width:24, height:24 }}
         />
-        <label id="revPalLbl" htmlFor="revPal" style={{fontSize:12,opacity:.9,cursor:"pointer"}}>
+        <label id="revPalLbl" htmlFor="revPal" style={{fontSize:12,opacity:.9,cursor:"pointer", padding:'10px 8px', borderRadius:8}}>
           Invertir paleta (Rojo → Rosa → Azul)
         </label>
+      </div>
+      </div>
+
+      {/* Sección: Vista */}
+      <div style={{marginTop:12}}>
+  <div style={{fontSize:12, fontWeight:800, letterSpacing:.3, opacity:.9, marginBottom:8, textTransform:'uppercase'}}>Vista</div>
+        <div style={{display:'grid', gap:12}}>
+          <label htmlFor="autoRot" style={{display:'flex', alignItems:'center', gap:12, fontSize:12, opacity:.9, cursor:'pointer'}}>
+            <input id="autoRot" type="checkbox" checked={autoRotate} onChange={(e)=>onAutoRotate(e.target.checked)} style={{width:24,height:24}} />
+            Rotación automática
+          </label>
+          <label htmlFor="showGrid" style={{display:'flex', alignItems:'center', gap:12, fontSize:12, opacity:.9, cursor:'pointer'}}>
+            <input id="showGrid" type="checkbox" checked={showGrid} onChange={(e)=>onShowGrid(e.target.checked)} style={{width:24,height:24}} />
+            Grid de referencia
+          </label>
+          <label htmlFor="showLabels" style={{display:'flex', alignItems:'center', gap:12, fontSize:12, opacity:.9, cursor:'pointer'}}>
+            <input id="showLabels" type="checkbox" checked={showLabels} onChange={(e)=>onShowLabels(e.target.checked)} style={{width:24,height:24}} />
+            Etiquetas de islas
+          </label>
+        </div>
       </div>
       </div>
     </div>

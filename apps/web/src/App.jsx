@@ -3,6 +3,7 @@ import Globe from './components/Globe'
 import Welcome from './components/Welcome'
 import Onboarding from './components/Onboarding'
 import Preloader from './components/Preloader'
+import AddIslandSheet from './components/AddIslandSheet'
 
 export default function App(){
   const [showWelcome, setShowWelcome] = useState(true)
@@ -11,6 +12,8 @@ export default function App(){
   const [showOb, setShowOb] = useState(false)
   const [loadPct, setLoadPct] = useState(0)
   const [loading, setLoading] = useState(true)
+  const globeApiRef = useRef(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(()=>{
     return ()=> { if (demoTimer.current) clearInterval(demoTimer.current) }
@@ -53,9 +56,26 @@ export default function App(){
       {showWelcome && (
         <Welcome onEnter={()=>setShowWelcome(false)} onDemo={startDemo} />
       )}
-      <Globe onHelp={()=>setShowOb(true)} onReady={handleGlobeReady} />
+      <Globe onHelp={()=>setShowOb(true)} onReady={handleGlobeReady} onApi={(api)=> (globeApiRef.current = api)} />
       <Onboarding open={showOb} onClose={()=>setShowOb(false)} />
       <Preloader progress={loadPct} visible={loading} />
+      {/* FAB */}
+      <button
+        type="button"
+        onClick={()=> setSheetOpen(true)}
+        aria-label="Crear nueva isla"
+        title="Crear nueva isla"
+        style={{
+          position:'absolute', right:'max(16px, env(safe-area-inset-right))', bottom:'max(16px, env(safe-area-inset-bottom))',
+          width:56, height:56, borderRadius:28, cursor:'pointer', zIndex:15,
+          background:'#F0375D', color:'#0a0a15', border:'none', boxShadow:'0 10px 26px rgba(240,55,93,.35)', fontSize:24, fontWeight:900
+        }}
+      >+</button>
+      <AddIslandSheet
+        open={sheetOpen}
+        onClose={()=> setSheetOpen(false)}
+        onCreate={({ title, emoji, zone })=> globeApiRef.current?.addIsland?.({ title, emoji, zone }) }
+      />
       {demoLeft>0 && (
         <div style={{
           position:'absolute',
