@@ -20,11 +20,11 @@ export default function Welcome({ onEnter, onDemo }){
   const subtitle = { opacity:.85, lineHeight:1.5, marginTop:6, fontSize:14 }
   const ctas = { display:'flex', gap:12, marginTop:18, flexWrap:'wrap' }
   const primary = {
-    background:'#F0375D', color:'#0a0a15', border:'none', padding:'12px 16px', borderRadius:10,
+    background:'#F0375D', color:'#0a0a15', border:'none', padding:'12px 16px', minHeight:44, minWidth:44, borderRadius:10,
     fontWeight:700, cursor:'pointer'
   }
   const secondary = {
-    background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.2)', padding:'12px 16px', borderRadius:10,
+    background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.2)', padding:'12px 16px', minHeight:44, minWidth:44, borderRadius:10,
     fontWeight:600, cursor:'pointer'
   }
   const kbd = { padding:'2px 6px', borderRadius:6, border:'1px solid #2a3355', background:'#0a0f1f', fontSize:12 }
