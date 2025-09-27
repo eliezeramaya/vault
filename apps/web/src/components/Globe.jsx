@@ -44,6 +44,7 @@ const greatCircleElevated = (a, b, baseRadius, lift = 0.18, segs = 128) => {
 
 export default function Globe({ onHelp, onReady }) {
   const mountRef = useRef(null);
+  const labelsRef = useRef(null);
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
   const dragging = useRef({ active:false, island:null });
@@ -68,6 +69,7 @@ export default function Globe({ onHelp, onReady }) {
     const mountEl = mountRef.current;
     const width = mountEl.clientWidth;
     const height = mountEl.clientHeight;
+    const labelLayerEl = labelsRef.current;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a15);
@@ -97,40 +99,70 @@ export default function Globe({ onHelp, onReady }) {
     grid.rotation.x = Math.PI/2; grid.material.transparent = true; grid.material.opacity = .35;
     scene.add(grid);
 
-    // Nodos ejemplo
+    // Nodos ejemplo (estado vacío con valor)
     const nodesData = [
-      { id:'A', lat: 15, lon:-60, priority:6 },
-      { id:'B', lat: -5, lon: 10, priority:3 },
-      { id:'C', lat: 32, lon:120, priority:9 },
+      { id:'Salud',       lat:  18, lon: -55, priority: 8 },
+      { id:'Finanzas',    lat:  -8, lon:  20, priority: 6 },
+      { id:'Carrera',     lat:  34, lon: 120, priority: 9 },
+      { id:'Relaciones',  lat: -22, lon: -120, priority: 5 },
+      { id:'Aprendizaje', lat:  12, lon:  70, priority: 7 },
     ];
-    const islandMat = new THREE.MeshStandardMaterial({ color:0x7ad7ff, emissive:0x0a0f1f, roughness:.4, metalness:.2 });
-    const ringTex = makeRingTexture();
-    const ringMat = new THREE.MeshBasicMaterial({ map:ringTex, transparent:true, depthWrite:false, opacity:.55, side:THREE.DoubleSide });
+  const islandMat = new THREE.MeshStandardMaterial({ roughness:.85, metalness:0.0, vertexColors:true });
+  const shadowTex = makeShadowTexture();
+  const shadowMat = new THREE.MeshBasicMaterial({ map:shadowTex, transparent:true, depthWrite:false, opacity:.35, side:THREE.DoubleSide, color:0x000000 });
 
-    const islandsGroup = new THREE.Group();
-    const halosGroup = new THREE.Group();
+  const islandsGroup = new THREE.Group();
+  const halosGroup = new THREE.Group();
     scene.add(islandsGroup, halosGroup);
 
-    const islands = nodesData.map((n, idx) => {
-      const size = ISLAND_BASE_SIZE * (0.6 + 0.4*(n.priority/10));
-      const geom = new THREE.SphereGeometry(size, 24, 16);
+  const islands = nodesData.map((n, idx) => {
+      const size = ISLAND_BASE_SIZE * (0.7 + 0.5*(n.priority/10));
+      const geom = makeIslandGeometry(size);
       const mesh = new THREE.Mesh(geom, islandMat.clone());
       mesh.userData.node = n;
+      mesh.userData.size = size;
       const base = latLonToV3(n.lat, n.lon, SPHERE_RADIUS);
       const normal = base.clone().normalize();
-      const pos = base.clone().addScaledVector(normal, ISLAND_OFFSET);
+      const lift = ISLAND_OFFSET + size; // keep island floating above surface
+      const pos = base.clone().addScaledVector(normal, lift);
       mesh.position.copy(pos);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), normal);
       mesh.userData.bobPhase = idx * 1.37;
+      mesh.userData.lift = lift;
       islandsGroup.add(mesh);
 
-      const ringR = size * 1.7;
-      const ringGeom = new THREE.RingGeometry(ringR*0.6, ringR, 40);
-      const ring = new THREE.Mesh(ringGeom, ringMat.clone());
-      const ringPos = base.clone().addScaledVector(normal, 0.01);
-      ring.position.copy(ringPos);
-      ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), normal);
-      ring.material.opacity = THREE.MathUtils.lerp(0.35, 0.7, n.priority/10);
-      halosGroup.add(ring);
+      // Soft shadow on globe surface
+      const ringR = size * 1.9;
+      const ringGeom = new THREE.RingGeometry(ringR*0.65, ringR, 48);
+      const shadow = new THREE.Mesh(ringGeom, shadowMat.clone());
+      const ringPos = base.clone().addScaledVector(normal, 0.012);
+      shadow.position.copy(ringPos);
+      shadow.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), normal);
+      shadow.material.opacity = THREE.MathUtils.lerp(0.22, 0.42, n.priority/10);
+      halosGroup.add(shadow);
+
+      // HTML label overlay for concept clarity
+      if (labelLayerEl) {
+        const lbl = document.createElement('div');
+        lbl.textContent = n.id;
+        Object.assign(lbl.style, {
+          position: 'absolute',
+          transform: 'translate(-50%, -100%)',
+          padding: '2px 6px',
+          fontSize: '11px',
+          letterSpacing: '.2px',
+          color: '#EAEAEA',
+          background: 'rgba(10,12,24,.60)',
+          border: '1px solid rgba(255,255,255,.10)',
+          borderRadius: '8px',
+          boxShadow: '0 2px 10px rgba(0,0,0,.25)',
+          pointerEvents: 'none',
+          whiteSpace: 'nowrap',
+          zIndex: 6,
+        });
+        labelLayerEl.appendChild(lbl);
+        mesh.userData.labelEl = lbl;
+      }
 
       return mesh;
     });
@@ -181,12 +213,14 @@ export default function Globe({ onHelp, onReady }) {
       const hit = raycaster.current.intersectObject(sphere, false)[0];
       if (!hit) return;
       const { latDeg, lonDeg } = v3ToLatLon(hit.point);
-      const mesh = dragging.current.island;
+  const mesh = dragging.current.island;
       mesh.userData.node.lat = latDeg; mesh.userData.node.lon = lonDeg;
       const base = latLonToV3(latDeg, lonDeg, SPHERE_RADIUS);
       const normal = base.clone().normalize();
-      const pos = base.clone().addScaledVector(normal, ISLAND_OFFSET);
+  const lift = mesh.userData?.lift ?? ISLAND_OFFSET;
+  const pos = base.clone().addScaledVector(normal, lift);
       mesh.position.copy(pos);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), normal);
 
       // recomputar arco demo si corresponde
       const idx = islandsGroup.children.indexOf(mesh);
@@ -214,9 +248,30 @@ export default function Globe({ onHelp, onReady }) {
       islands.forEach((m) => {
         const n = m.position.clone().normalize();
         const base = latLonToV3(m.userData.node.lat, m.userData.node.lon, SPHERE_RADIUS);
-        const basePos = base.clone().addScaledVector(n, ISLAND_OFFSET);
-        const amp = 0.035; const bob = Math.sin(t * 1.3 + m.userData.bobPhase) * amp;
+        const lift = m.userData?.lift ?? ISLAND_OFFSET;
+        const basePos = base.clone().addScaledVector(n, lift);
+        const amp = 0.028; const bob = Math.sin(t * 1.3 + m.userData.bobPhase) * amp;
         m.position.copy(basePos.clone().addScaledVector(n, bob));
+
+        // Update HTML label position/projection
+        const lbl = m.userData.labelEl;
+        if (lbl) {
+          const p = m.position.clone();
+          const ndc = p.clone().project(camera);
+          const w = renderer.domElement.clientWidth;
+          const h = renderer.domElement.clientHeight;
+          const x = (ndc.x * 0.5 + 0.5) * w;
+          const y = (-ndc.y * 0.5 + 0.5) * h;
+          const isVisible = ndc.z > -1 && ndc.z < 1;
+          if (isVisible) {
+            lbl.style.display = 'block';
+            lbl.style.left = `${x}px`;
+            lbl.style.top = `${y}px`;
+            lbl.style.opacity = '1';
+          } else {
+            lbl.style.display = 'none';
+          }
+        }
       });
       arc.material.dashOffset = -(t * 0.6);
       renderer.render(scene, camera);
@@ -250,6 +305,12 @@ export default function Globe({ onHelp, onReady }) {
       heatPass.dispose();
       [sphereGeom, arcGeom].forEach(g=>g.dispose());
       renderer.dispose();
+      // Cleanup labels
+      if (labelLayerEl) {
+        while (labelLayerEl.firstChild) {
+          labelLayerEl.removeChild(labelLayerEl.firstChild);
+        }
+      }
     };
   }, []);
 
@@ -271,6 +332,7 @@ export default function Globe({ onHelp, onReady }) {
   return (
     <div style={{ width:'100%', height:'100%', position:'relative' }}>
       <div ref={mountRef} style={{ width:'100%', height:'100%' }} />
+      <div ref={labelsRef} style={{ position:'absolute', inset:0, pointerEvents:'none' }} />
       <HeatmapControls
         opacity={opacity} sigmaPx={sigmaPx} radiusPx={radiusPx} reverse={reverse}
         onOpacity={setOpacity} onSigma={setSigmaPx} onRadius={setRadiusPx} onReverse={setReverse}
@@ -280,14 +342,37 @@ export default function Globe({ onHelp, onReady }) {
   );
 }
 
-function makeRingTexture(size = 256) {
+function makeShadowTexture(size = 256) {
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d');
   const cx=size/2, cy=size/2, r=size/2;
-  const g = ctx.createRadialGradient(cx,cy,r*0.35, cx,cy,r);
-  g.addColorStop(0.0,'rgba(255,255,255,0.25)');
-  g.addColorStop(0.6,'rgba(255,255,255,0.10)');
-  g.addColorStop(1.0,'rgba(255,255,255,0.0)');
+  const g = ctx.createRadialGradient(cx,cy, r*0.1, cx,cy, r*1.0);
+  g.addColorStop(0.0,'rgba(0,0,0,0.35)');
+  g.addColorStop(0.6,'rgba(0,0,0,0.15)');
+  g.addColorStop(1.0,'rgba(0,0,0,0.00)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
-  const tex = new THREE.CanvasTexture(canvas); tex.anisotropy = 4; return tex;
+  const tex = new THREE.CanvasTexture(canvas); tex.anisotropy = 2; return tex;
+}
+
+function makeIslandGeometry(size = 0.2) {
+  // Start with icosahedron for faceted look and then displace vertices
+  const geo = new THREE.IcosahedronGeometry(size, 1);
+  const pos = geo.attributes.position;
+  const colors = [];
+  const color = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const v = new THREE.Vector3().fromBufferAttribute(pos, i).normalize();
+    // Slight displacement to create rocky island shape
+    const noise = (Math.sin(v.x*7.1)+Math.sin(v.y*5.7)+Math.sin(v.z*6.3)) * 0.04;
+    const scale = 1.0 + noise + Math.random()*0.015;
+    v.multiplyScalar(size*scale);
+    pos.setXYZ(i, v.x, v.y, v.z);
+    // Vertex colors: lighter on top, darker on sides/bottom
+    const dot = Math.max(0, v.clone().normalize().y);
+    color.setHSL(0.55, 0.45, 0.45 + dot*0.35); // teal-cyan tones
+    colors.push(color.r, color.g, color.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+  return geo;
 }
