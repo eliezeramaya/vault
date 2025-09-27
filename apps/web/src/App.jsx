@@ -57,7 +57,13 @@ export default function App(){
       <Onboarding open={showOb} onClose={()=>setShowOb(false)} />
       <Preloader progress={loadPct} visible={loading} />
       {demoLeft>0 && (
-        <div style={{position:'absolute', left:16, bottom:16, background:'rgba(10,12,24,.6)', border:'1px solid rgba(255,255,255,.1)', color:'#EAEAEA', padding:'8px 12px', borderRadius:8, fontSize:12, backdropFilter:'blur(8px)'}}>Demo en progreso · {demoLeft}s  —  Puedes arrastrar nodos y ajustar el heatmap</div>
+        <div style={{
+          position:'absolute',
+          left: 'max(16px, env(safe-area-inset-left))',
+          bottom: 'max(16px, env(safe-area-inset-bottom))',
+          background:'rgba(10,12,24,.6)', border:'1px solid rgba(255,255,255,.1)', color:'#EAEAEA',
+          padding:'8px 12px', borderRadius:8, fontSize:12, backdropFilter:'blur(8px)'
+        }}>Demo en progreso · {demoLeft}s  —  Puedes arrastrar nodos y ajustar el heatmap</div>
       )}
     </div>
   )
