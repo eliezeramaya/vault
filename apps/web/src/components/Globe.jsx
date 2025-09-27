@@ -56,10 +56,16 @@ export default function Globe() {
   const heatPassRef = useRef(null);
   const heatLayerRef = useRef(null);
   const islandsRef = useRef([]);
+  // Capture initial values in refs so the setup effect doesn't depend on state
+  const initialOpacityRef = useRef(0.85);
+  const initialSigmaRef = useRef(28);
+  const initialReverseRef = useRef(false);
 
   useEffect(() => {
-    const width = mountRef.current.clientWidth;
-    const height = mountRef.current.clientHeight;
+    // Snapshot the mount element to avoid stale ref warnings in cleanup
+    const mountEl = mountRef.current;
+    const width = mountEl.clientWidth;
+    const height = mountEl.clientHeight;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a15);
@@ -70,7 +76,7 @@ export default function Globe() {
     const renderer = new THREE.WebGLRenderer({ antialias:true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    mountRef.current.appendChild(renderer.domElement);
+  mountEl.appendChild(renderer.domElement);
 
     // Luces
     scene.add(new THREE.AmbientLight(0xffffff, .8));
@@ -139,9 +145,9 @@ export default function Globe() {
     scene.add(arc);
 
     // HEATMAP
-    const heatPass = new HeatmapPass(renderer, { width:1024, height:512, sigmaPx });
+  const heatPass = new HeatmapPass(renderer, { width:1024, height:512, sigmaPx: initialSigmaRef.current });
     heatPassRef.current = heatPass;
-    const heatLayer = createHeatLayer({ radius: SPHERE_RADIUS + 0.02, texture: heatPass.texture, opacity, reverse });
+  const heatLayer = createHeatLayer({ radius: SPHERE_RADIUS + 0.02, texture: heatPass.texture, opacity: initialOpacityRef.current, reverse: initialReverseRef.current });
     heatLayerRef.current = heatLayer;
     scene.add(heatLayer);
 
@@ -216,7 +222,7 @@ export default function Globe() {
     animate();
 
     const onResize = () => {
-      const w = mountRef.current.clientWidth, h = mountRef.current.clientHeight;
+      const w = mountEl.clientWidth, h = mountEl.clientHeight;
       renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix();
     };
     window.addEventListener('resize', onResize);
@@ -226,7 +232,9 @@ export default function Globe() {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('resize', onResize);
-      mountRef.current.removeChild(renderer.domElement);
+      if (mountEl && mountEl.contains(renderer.domElement)) {
+        mountEl.removeChild(renderer.domElement);
+      }
       heatPass.dispose();
       [sphereGeom, arcGeom].forEach(g=>g.dispose());
       renderer.dispose();
