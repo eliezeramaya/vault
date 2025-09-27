@@ -41,7 +41,7 @@ export default function HeatmapControls({
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
     fontFamily: 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto',
-    zIndex: 10,
+  zIndex: 20,
     touchAction: 'manipulation'
   } : {
     position: "absolute",
@@ -57,7 +57,7 @@ export default function HeatmapControls({
     backdropFilter: "blur(10px)",
     WebkitBackdropFilter: "blur(10px)",
     fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
-    zIndex: 10,
+  zIndex: 20,
   };
   const row = { display: "grid", gridTemplateColumns: "96px 1fr 56px", alignItems: "center", gap: 12, marginBottom: 12 };
   const label = { fontSize: 12, letterSpacing: .2, opacity: .9 };
