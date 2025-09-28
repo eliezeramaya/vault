@@ -24,12 +24,12 @@ export default function Onboarding({ open, onClose }){
   const steps = [
     {
       title: '1/3 • Rotar y zoom',
-      desc: 'Arrastra para rotar la esfera. Usa la rueda del ratón o el trackpad para acercar/alejar.',
-      hint: 'Consejo: mantenla rotando suavemente para explorar el mapa.'
+  desc: 'Arrastra con un dedo o el ratón para mover el mapa. Usa la rueda o pinza para acercar/alejar.',
+  hint: 'Consejo: navega por el mapa con pan y zoom para explorar tus ideas.'
     },
     {
       title: '2/3 • Crear isla',
-      desc: 'Haz doble clic sobre la esfera para crear una isla. Luego arrástrala para reubicarla.',
+  desc: 'Haz doble clic sobre el mapa para crear una isla. Luego arrástrala para reubicarla.',
       hint: 'Las islas representan ideas; su prioridad ajusta su influencia en el heatmap.'
     },
     {

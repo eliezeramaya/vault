@@ -38,7 +38,7 @@ export default function Preloader({ progress = 0, visible = true }) {
   return (
     <div style={overlay} role="status" aria-live="polite" aria-label={`Cargando escena • ${pct}%`}>
       <div style={card}>
-        <div style={title}>Cargando Esfera</div>
+  <div style={title}>Cargando Mapa</div>
         <div style={track} aria-hidden="true"><div style={fill} /></div>
         <div style={labels}>
           <span>{message}</span>

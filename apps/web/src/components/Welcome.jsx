@@ -35,16 +35,16 @@ export default function Welcome({ onEnter, onDemo }){
         <div style={logo}>
           <div style={mark}><span style={{fontWeight:900}}>IS</span></div>
           <div>
-            <div id="wTitle" style={title}>Idea Sphere</div>
-            <div style={{fontSize:13, opacity:.8}}>Globo interactivo con heatmap</div>
+            <div id="wTitle" style={title}>Idea Map</div>
+            <div style={{fontSize:13, opacity:.8}}>Mapa interactivo con heatmap</div>
           </div>
         </div>
         <div style={subtitle}>
-          Arrastra nodos en la esfera para reubicar ideas. Zoom y rotación con el ratón o trackpad.
+          Arrastra nodos en el mapa para reubicar ideas. Pan y zoom con el ratón o trackpad.
           Consejo: usa <span style={kbd}>click</span> + arrastre para mover nodos y <span style={kbd}>wheel</span> para zoom.
         </div>
         <div style={ctas}>
-          <button style={primary} onClick={onEnter} aria-label="Entrar a la Esfera">Entrar a la Esfera</button>
+          <button style={primary} onClick={onEnter} aria-label="Entrar al Mapa">Entrar al Mapa</button>
           <button style={secondary} onClick={onDemo} aria-label="Ver una demo rápida">Demo rápida 30s</button>
         </div>
       </div>
