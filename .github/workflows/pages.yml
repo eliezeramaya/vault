@@ -39,6 +39,10 @@ jobs:
         working-directory: apps/web
         run: npm run build
 
+      - name: Setup SPA fallback
+        working-directory: apps/web
+        run: cp dist/index.html dist/404.html
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
