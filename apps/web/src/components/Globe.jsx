@@ -6,25 +6,24 @@ import EditIslandSheet from './EditIslandSheet';
 import { HeatmapPass } from '../lib/heatmap/HeatmapPass';
 import { createHeatLayer } from '../lib/heatmap/HeatmapLayer';
 
-const SPHERE_RADIUS = 5;
-const LABEL_OFFSET = 0.3; // distancia sobre la superficie para ubicar los chips
-const ARC_LIFT = 0.15;
-const ROTATION_SPEED = 0.02;
+// Plano 2D (relación 2:1, como proyección equirectangular 360x180)
+const PLANE_WIDTH = 10;
+const PLANE_HEIGHT = PLANE_WIDTH / 2;
+const LABEL_Z = 0.06; // altura leve sobre el plano para los chips
+const ROTATION_SPEED = 0.0; // sin auto-rotación en modo plano
 
 const d2r = (d)=> (d*Math.PI)/180;
-const latLonToV3 = (latDeg, lonDeg, radius) => {
-  const lat = d2r(latDeg), lon = d2r(lonDeg);
-  return new THREE.Vector3(
-    radius * Math.cos(lat) * Math.cos(lon),
-    radius * Math.sin(lat),
-    radius * Math.cos(lat) * Math.sin(lon)
-  );
+// Plano: mapear lat/lon a XY (equirectangular). Centro (0,0) en el centro del plano.
+const latLonToPlane = (latDeg, lonDeg, z = LABEL_Z) => {
+  const x = (lonDeg / 180) * (PLANE_WIDTH / 2);
+  const y = (latDeg / 90) * (PLANE_HEIGHT / 2);
+  return new THREE.Vector3(x, y, z);
 };
-const v3ToLatLon = (v) => {
-  const r = v.length();
-  const lat = Math.asin(v.y / r);
-  const lon = Math.atan2(v.z, v.x);
-  return { latDeg: (lat*180)/Math.PI, lonDeg: (lon*180)/Math.PI };
+const planePointToLatLon = (uv) => {
+  // uv de PlaneGeometry está en [0,1]
+  const lonDeg = uv.x * 360 - 180;
+  const latDeg = uv.y * 180 - 90;
+  return { latDeg, lonDeg };
 };
 const latLonToUV = (latDeg, lonDeg) => ({
   u: (lonDeg + 180) / 360,
@@ -54,47 +53,29 @@ export default function Globe({ onHelp, onReady, onApi }) {
   const [opacity, setOpacity] = useState(0.85);
   const [sigmaPx, setSigmaPx] = useState(28);
 
-function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0x2a3a7a, opacity = 0.35 } = {}) {
+function createRectGrid(width, height, meridians = 12, parallels = 12, { color = 0x2a3a7a, opacity = 0.35 } = {}) {
   const group = new THREE.Group();
   const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
-
-  // Parallels (constant latitude)
+  // Líneas horizontales (latitudes)
   for (let i = 1; i < parallels; i++) {
-    const lat = -Math.PI/2 + (i * Math.PI / parallels);
-    const r = Math.cos(lat) * radius;
-    const y = Math.sin(lat) * radius;
-    const segs = 128;
-    const pts = [];
-    for (let s=0; s<=segs; s++) {
-      const theta = (s / segs) * Math.PI * 2;
-      pts.push(new THREE.Vector3(
-        r * Math.cos(theta),
-        y,
-        r * Math.sin(theta)
-      ));
-    }
+    const y = -height/2 + (i * height / parallels);
+    const pts = [
+      new THREE.Vector3(-width/2, y, 0.0),
+      new THREE.Vector3( width/2, y, 0.0)
+    ];
     const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const line = new THREE.Line(geo, mat);
-    group.add(line);
+    group.add(new THREE.Line(geo, mat));
   }
-
-  // Meridians (constant longitude)
-  for (let j = 0; j < meridians; j++) {
-    const lon = (j / meridians) * Math.PI * 2;
-    const segs = 128;
-    const pts = [];
-    for (let s=0; s<=segs; s++) {
-      const t = -Math.PI/2 + (s / segs) * Math.PI; // lat from -90 to 90
-      const x = radius * Math.cos(t) * Math.cos(lon);
-      const y = radius * Math.sin(t);
-      const z = radius * Math.cos(t) * Math.sin(lon);
-      pts.push(new THREE.Vector3(x,y,z));
-    }
+  // Líneas verticales (longitudes)
+  for (let j = 1; j < meridians; j++) {
+    const x = -width/2 + (j * width / meridians);
+    const pts = [
+      new THREE.Vector3(x, -height/2, 0.0),
+      new THREE.Vector3(x,  height/2, 0.0)
+    ];
     const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const line = new THREE.Line(geo, mat);
-    group.add(line);
+    group.add(new THREE.Line(geo, mat));
   }
-
   return group;
 }
   const [radiusPx, setRadiusPx] = useState(32);
@@ -157,19 +138,19 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
     dir.position.set(5,6,8);
     scene.add(dir);
 
-    // Esfera base
-    const sphereGeom = new THREE.SphereGeometry(SPHERE_RADIUS, 32, 32);
-    const sphereMat = new THREE.MeshStandardMaterial({ color:0x10162f, roughness:.8, metalness:.1 });
-    const sphere = new THREE.Mesh(sphereGeom, sphereMat);
-    scene.add(sphere);
+  // Plano base
+  const planeGeom = new THREE.PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 1, 1);
+  const planeMat = new THREE.MeshStandardMaterial({ color:0x10162f, roughness:.8, metalness:.1, side: THREE.DoubleSide });
+  const plane = new THREE.Mesh(planeGeom, planeMat);
+  scene.add(plane);
 
-    // Grid esférico (meridianos y paralelos)
-    const sphericalGrid = createSphericalGrid(SPHERE_RADIUS + 0.003, 15, 15, {
+    // Grid rectangular (lat/lon)
+    const rectGrid = createRectGrid(PLANE_WIDTH, PLANE_HEIGHT, 15, 15, {
       color: 0x2a3a7a,
       opacity: 0.35
     });
-    scene.add(sphericalGrid);
-    gridRef.current = sphericalGrid;
+    scene.add(rectGrid);
+    gridRef.current = rectGrid;
 
     // Nodos ejemplo (estado vacío con valor)
     const nodesData = [
@@ -221,21 +202,20 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
       chip.addEventListener('mouseleave', ()=> { setHoveredIdx(v => v===idx ? -1 : v); if (hoveredIdxRef.current === idx) hoveredIdxRef.current = -1; });
       chip.addEventListener('click', (e)=> { e.stopPropagation(); setSelectedIdx(idx); selectedIdxRef.current = idx; });
       labelLayerEl.appendChild(chip);
-      // sombra de contacto (anillo) sobre la esfera
-      const ringR = 0.18;
-      const ringGeom = new THREE.RingGeometry(ringR*0.55, ringR, 48);
-      const shadowMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.25, side:THREE.DoubleSide, depthWrite:false });
-      const shadow = new THREE.Mesh(ringGeom, shadowMat);
+      // sombra de contacto (círculo) sobre el plano
+      const circR = 0.22;
+      const circGeom = new THREE.CircleGeometry(circR, 48);
+      const shadowMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.22, side:THREE.DoubleSide, depthWrite:false });
+      const shadow = new THREE.Mesh(circGeom, shadowMat);
       scene.add(shadow);
       return { ...n, el: chip, shadow };
     });
     nodesRef.current = nodes;
 
-    // Arco elevado demo (A->C)
-  const A = latLonToV3(nodesData[0].lat, nodesData[0].lon, SPHERE_RADIUS + LABEL_OFFSET);
-  const C = latLonToV3(nodesData[2].lat, nodesData[2].lon, SPHERE_RADIUS + LABEL_OFFSET);
-  const arcPts = greatCircleElevated(A, C, SPHERE_RADIUS + LABEL_OFFSET, ARC_LIFT, 160);
-    const arcGeom = new THREE.BufferGeometry().setFromPoints(arcPts);
+    // Línea demo (A->C) en plano
+    const A = latLonToPlane(nodesData[0].lat, nodesData[0].lon, LABEL_Z + 0.01);
+    const C = latLonToPlane(nodesData[2].lat, nodesData[2].lon, LABEL_Z + 0.01);
+    const arcGeom = new THREE.BufferGeometry().setFromPoints([A, C]);
     const arcMat = new THREE.LineDashedMaterial({ color:0xff77aa, transparent:true, opacity:.95, dashSize:.22, gapSize:.15 });
     const arc = new THREE.Line(arcGeom, arcMat);
     arc.computeLineDistances(); arc.renderOrder = 2;
@@ -244,7 +224,7 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
     // HEATMAP
   const heatPass = new HeatmapPass(renderer, { width:1024, height:512, sigmaPx: initialSigmaRef.current });
     heatPassRef.current = heatPass;
-  const heatLayer = createHeatLayer({ radius: SPHERE_RADIUS + 0.02, texture: heatPass.texture, opacity: initialOpacityRef.current, reverse: initialReverseRef.current });
+  const heatLayer = createHeatLayer({ width: PLANE_WIDTH, height: PLANE_HEIGHT, texture: heatPass.texture, opacity: initialOpacityRef.current, reverse: initialReverseRef.current });
     heatLayerRef.current = heatLayer;
     scene.add(heatLayer);
 
@@ -291,10 +271,10 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
         chip.addEventListener('mouseleave', ()=> { setHoveredIdx(v => v===idx ? -1 : v); if (hoveredIdxRef.current === idx) hoveredIdxRef.current = -1; });
         chip.addEventListener('click', (e)=> { e.stopPropagation(); setSelectedIdx(idx); selectedIdxRef.current = idx; });
         labelLayerEl.appendChild(chip);
-        // sombra
-        const ringR = 0.18; const ringGeom = new THREE.RingGeometry(ringR*0.55, ringR, 48);
-        const shadowMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.25, side:THREE.DoubleSide, depthWrite:false });
-        const shadow = new THREE.Mesh(ringGeom, shadowMat); scene.add(shadow);
+        // sombra (círculo)
+        const circR = 0.22; const circGeom = new THREE.CircleGeometry(circR, 48);
+        const shadowMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.22, side:THREE.DoubleSide, depthWrite:false });
+        const shadow = new THREE.Mesh(circGeom, shadowMat); scene.add(shadow);
         nodesRef.current.push({ ...node, el: chip, shadow });
       } else {
         nodesRef.current.push(node);
@@ -336,19 +316,17 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
       }
       if (e.pointerType === 'touch') {
         if (pointers.size === 1) {
-          gesture.mode = 'rotate';
+          // en plano: pan con un dedo
+          gesture.mode = 'pan';
           const p = Array.from(pointers.values())[0];
           gesture.last = { x: p.x, y: p.y };
-          gesture.startYaw = yawRef.current;
-          gesture.startPitch = pitchRef.current;
+          gesture.startTarget = targetOffsetRef.current.clone();
         } else if (pointers.size === 2) {
           // Initialize pinch/pan
           const [p1, p2] = Array.from(pointers.values());
           const dx = p2.x - p1.x, dy = p2.y - p1.y;
           gesture.startDist = Math.hypot(dx, dy);
           gesture.startRadius = camDistRef.current;
-          gesture.startYaw = yawRef.current;
-          gesture.startPitch = pitchRef.current;
           gesture.startTarget = targetOffsetRef.current.clone();
           gesture.startMid = { x: (p1.x + p2.x)/2, y: (p1.y + p2.y)/2 };
           gesture.mode = 'pinch';
@@ -363,33 +341,36 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
       if (dragging.current.active) {
         mouse.current.set(((e.clientX - rect.left)/rect.width) * 2 - 1, -((e.clientY - rect.top)/rect.height) * 2 + 1);
         raycaster.current.setFromCamera(mouse.current, camera);
-        const hit = raycaster.current.intersectObject(sphere, false)[0];
+        const hit = raycaster.current.intersectObject(plane, false)[0];
         if (!hit) return;
-        const { latDeg, lonDeg } = v3ToLatLon(hit.point);
+        const { latDeg, lonDeg } = planePointToLatLon(hit.uv);
         const idx = dragging.current.nodeIndex;
         if (idx >= 0 && nodesRef.current[idx]) {
           nodesRef.current[idx].lat = latDeg;
           nodesRef.current[idx].lon = lonDeg;
         }
-        // recomputar arco demo si corresponde (si movemos 0 o 2)
+        // recomputar línea demo si corresponde (si movemos 0 o 2)
         if (idx === 0 || idx === 2) {
-          const A2 = latLonToV3(nodesRef.current[0].lat, nodesRef.current[0].lon, SPHERE_RADIUS + LABEL_OFFSET);
-          const C2 = latLonToV3(nodesRef.current[2].lat, nodesRef.current[2].lon, SPHERE_RADIUS + LABEL_OFFSET);
-          const newPts = greatCircleElevated(A2, C2, SPHERE_RADIUS + LABEL_OFFSET, ARC_LIFT, 160);
-          arc.geometry.setFromPoints(newPts); arc.computeLineDistances();
+          const A2 = latLonToPlane(nodesRef.current[0].lat, nodesRef.current[0].lon, LABEL_Z + 0.01);
+          const C2 = latLonToPlane(nodesRef.current[2].lat, nodesRef.current[2].lon, LABEL_Z + 0.01);
+          arc.geometry.setFromPoints([A2, C2]); arc.computeLineDistances();
         }
         refreshHeat();
         return;
       }
       if (e.pointerType === 'touch') {
-        if (pointers.size === 1 && gesture.mode === 'rotate') {
+        if (pointers.size === 1 && gesture.mode === 'pan') {
           const p = Array.from(pointers.values())[0];
           const dx = p.x - gesture.last.x;
           const dy = p.y - gesture.last.y;
           gesture.last = { x: p.x, y: p.y };
-          const sens = 0.005;
-          yawRef.current = gesture.startYaw + dx * sens;
-          pitchRef.current = THREE.MathUtils.clamp(gesture.startPitch + dy * sens, -0.9, 0.9);
+          const panScale = 0.003 * camDistRef.current;
+          const vRight = new THREE.Vector3(1,0,0);
+          const vUp = new THREE.Vector3(0,1,0);
+          const offset = gesture.startTarget.clone()
+            .addScaledVector(vRight, -dx * panScale)
+            .addScaledVector(vUp, dy * panScale);
+          targetOffsetRef.current.copy(offset);
         } else if (pointers.size === 2 && gesture.mode === 'pinch') {
           const [p1, p2] = Array.from(pointers.values());
           const dx = p2.x - p1.x, dy = p2.y - p1.y;
@@ -403,12 +384,10 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
           const mid = { x:(p1.x+p2.x)/2, y:(p1.y+p2.y)/2 };
           const mdx = mid.x - gesture.startMid.x;
           const mdy = mid.y - gesture.startMid.y;
-          // Convert pixels to world-space using camera basis vectors
-          const panScale = 0.0025 * camDistRef.current;
-          const vRight = new THREE.Vector3();
-          const vUp = new THREE.Vector3();
-          camera.getWorldDirection(vRight).cross(camera.up).normalize(); // right
-          vUp.copy(camera.up).normalize();
+          // Convert pixels to world-space along plane axes
+          const panScale = 0.003 * camDistRef.current;
+          const vRight = new THREE.Vector3(1,0,0);
+          const vUp = new THREE.Vector3(0,1,0);
           const offset = gesture.startTarget.clone()
             .addScaledVector(vRight, -mdx * panScale)
             .addScaledVector(vUp, mdy * panScale);
@@ -464,19 +443,13 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
   if (autoRotateRef.current && !userInteractingRef.current) yawRef.current += ROTATION_SPEED * 0.01;
       // Update camera from orbit params
       const r = camDistRef.current;
-      const yaw = yawRef.current; const pitch = pitchRef.current;
-      const dir = new THREE.Vector3(
-        Math.cos(pitch) * Math.cos(yaw),
-        Math.sin(pitch),
-        Math.cos(pitch) * Math.sin(yaw)
-      ).normalize();
-      const camPos = dir.clone().multiplyScalar(r).add(targetOffsetRef.current);
-      camera.position.copy(camPos);
-      camera.lookAt(targetOffsetRef.current);
+      // Cámara mirando ortogonalmente al plano (eje Z)
+      camera.position.set(targetOffsetRef.current.x, targetOffsetRef.current.y, r);
+      camera.lookAt(targetOffsetRef.current.x, targetOffsetRef.current.y, 0);
       // Proyectar y ubicar chips
       nodesRef.current.forEach((n, idx) => {
-        const lift = (idx===hoveredIdxRef.current ? 0.05 : 0) + (idx===selectedIdxRef.current ? 0.06 : 0);
-        const base = latLonToV3(n.lat, n.lon, SPHERE_RADIUS + LABEL_OFFSET + lift);
+  const lift = (idx===hoveredIdxRef.current ? 0.02 : 0) + (idx===selectedIdxRef.current ? 0.03 : 0);
+  const base = latLonToPlane(n.lat, n.lon, LABEL_Z + lift);
         const ndc = base.clone().project(camera);
         const w = renderer.domElement.clientWidth;
         const h = renderer.domElement.clientHeight;
@@ -500,13 +473,12 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
             // opcional: escalar ligeramente según distancia a borde para mayor legibilidad
           }
         }
-        // sombra de contacto en la esfera
+        // sombra de contacto en el plano
         if (n.shadow) {
-          const baseSurf = latLonToV3(n.lat, n.lon, SPHERE_RADIUS + 0.01);
-          const normal = baseSurf.clone().normalize();
+          const baseSurf = latLonToPlane(n.lat, n.lon, 0.002);
           n.shadow.position.copy(baseSurf);
-          n.shadow.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), normal);
-          n.shadow.material.opacity = (idx===hoveredIdxRef.current || idx===selectedIdxRef.current) ? 0.42 : 0.25;
+          n.shadow.rotation.set(0,0,0);
+          n.shadow.material.opacity = (idx===hoveredIdxRef.current || idx===selectedIdxRef.current) ? 0.36 : 0.22;
         }
       });
       // Guía desde superficie hasta chip seleccionado
@@ -518,8 +490,8 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
           guideRef.current = new THREE.Line(g, m); guideRef.current.renderOrder = 3; scene.add(guideRef.current);
         }
         const n = nodesRef.current[selectedIdxRef.current];
-        const p0 = latLonToV3(n.lat, n.lon, SPHERE_RADIUS + 0.01);
-        const p1 = latLonToV3(n.lat, n.lon, SPHERE_RADIUS + LABEL_OFFSET + 0.06);
+        const p0 = latLonToPlane(n.lat, n.lon, 0.002);
+        const p1 = latLonToPlane(n.lat, n.lon, LABEL_Z + 0.03);
         guideRef.current.geometry.setFromPoints([p0, p1]);
       } else if (guideRef && guideRef.current) {
         if (guideRef.current.parent) guideRef.current.parent.remove(guideRef.current);
@@ -559,7 +531,7 @@ function createSphericalGrid(radius, meridians = 12, parallels = 12, { color = 0
         mountEl.removeChild(renderer.domElement);
       }
       heatPass.dispose();
-      [sphereGeom, arcGeom].forEach(g=>g.dispose());
+  [planeGeom, arcGeom].forEach(g=>g.dispose());
       renderer.dispose();
       // Cleanup labels
       if (labelLayerEl) {

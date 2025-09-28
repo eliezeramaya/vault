@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 
-export function createHeatLayer({ radius = 5.02, texture, opacity = 0.85, reverse = false } = {}) {
-  const geom = new THREE.SphereGeometry(radius, 64, 32);
+export function createHeatLayer({ width, height, texture, opacity = 0.85, reverse = false, radius } = {}) {
+  // Si se pasa radius (legacy), crea esfera; si no, plano de width x height
+  const geom = (typeof radius === 'number')
+    ? new THREE.SphereGeometry(radius, 64, 32)
+    : new THREE.PlaneGeometry(width ?? 10, height ?? 5, 1, 1);
 
   const frag = `
     precision highp float;
