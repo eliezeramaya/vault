@@ -119,6 +119,18 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
   const initialReverseRef = useRef(false);
   const internalApiRef = useRef({});
 
+  // Read CSS variables from the root to theme the map consistently
+  function readCssVar(name, fallback) {
+    try {
+      const css = getComputedStyle(document.documentElement);
+      const v = css.getPropertyValue(name);
+      const s = (v || '').trim();
+      return s || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   useEffect(() => {
     // Snapshot the mount element to avoid stale ref warnings in cleanup
     const mountEl = mountRef.current;
@@ -126,8 +138,8 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
     const height = mountEl.clientHeight;
     const labelLayerEl = labelsRef.current;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a15);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(readCssVar('--map-bg', readCssVar('--bg-wrap', '#0a0a15')));
 
   const camera = new THREE.PerspectiveCamera(50, width/height, 0.1, 100);
   camera.position.set(0,0,camDistRef.current);
@@ -146,13 +158,13 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
 
   // Plano base
   const planeGeom = new THREE.PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 1, 1);
-  const planeMat = new THREE.MeshStandardMaterial({ color:0x10162f, roughness:.8, metalness:.1, side: THREE.DoubleSide });
+  const planeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(readCssVar('--map-plane', '#10162f')), roughness:.8, metalness:.1, side: THREE.DoubleSide });
   const plane = new THREE.Mesh(planeGeom, planeMat);
   scene.add(plane);
 
     // Grid rectangular (lat/lon)
     const rectGrid = createRectGrid(PLANE_WIDTH, PLANE_HEIGHT, 15, 15, {
-      color: 0x2a3a7a,
+      color: new THREE.Color(readCssVar('--grid-medium', '#2a3a7a')).getHex(),
       opacity: 0.35
     });
     scene.add(rectGrid);
@@ -207,7 +219,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
       const A = latLonToPlane(a.lat, a.lon, LABEL_Z + 0.01);
       const B = latLonToPlane(b.lat, b.lon, LABEL_Z + 0.01);
       const g = new THREE.BufferGeometry().setFromPoints([A, B]);
-      const m = new THREE.LineDashedMaterial({ color:0xff77aa, transparent:true, opacity:.95, dashSize:.22, gapSize:.15 });
+  const m = new THREE.LineDashedMaterial({ color: new THREE.Color(readCssVar('--accent', '#ff77aa')), transparent:true, opacity:.95, dashSize:.22, gapSize:.15 });
       const line = new THREE.Line(g, m); line.computeLineDistances(); line.renderOrder = 2;
       arcsGroupRef.current.add(line);
       arcsRef.current.push({ aIdx, bIdx, line });
@@ -274,7 +286,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
         Object.assign(chip.style, {
           position: 'absolute', transform: 'translate(-50%, -50%)', width: '44px', height: '44px',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', letterSpacing: '.2px',
-          color: '#EAEAEA', background: 'rgba(10,12,24,.72)', border: '1px solid rgba(255,255,255,.10)', borderRadius: '50%',
+          color: 'var(--note-text, var(--text))', background: 'var(--note-bg)', border: '1px solid var(--note-border)', borderRadius: '50%',
           boxShadow: '0 6px 20px rgba(0,0,0,.35)', pointerEvents: 'auto', whiteSpace: 'nowrap', zIndex: 7, cursor: 'grab', userSelect: 'none', touchAction: 'none'
         });
         attachChipListeners(chip, newIdx);
@@ -320,9 +332,9 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
         justifyContent: 'center',
         fontSize: '18px',
         letterSpacing: '.2px',
-        color: '#EAEAEA',
-        background: 'rgba(10,12,24,.72)',
-        border: '1px solid rgba(255,255,255,.10)',
+        color: 'var(--note-text, var(--text))',
+        background: 'var(--note-bg)',
+        border: '1px solid var(--note-border)',
         borderRadius: '50%',
         boxShadow: '0 6px 20px rgba(0,0,0,.35)',
         pointerEvents: 'auto',
@@ -348,7 +360,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
     const A = latLonToPlane(nodesData[0].lat, nodesData[0].lon, LABEL_Z + 0.01);
     const C = latLonToPlane(nodesData[2].lat, nodesData[2].lon, LABEL_Z + 0.01);
   const arcGeom = new THREE.BufferGeometry().setFromPoints([A, C]);
-  const arcMat = new THREE.LineDashedMaterial({ color:0xff77aa, transparent:true, opacity:.95, dashSize:.22, gapSize:.15 });
+  const arcMat = new THREE.LineDashedMaterial({ color: new THREE.Color(readCssVar('--accent', '#ff77aa')), transparent:true, opacity:.95, dashSize:.22, gapSize:.15 });
   const arc = new THREE.Line(arcGeom, arcMat);
   arc.computeLineDistances(); arc.renderOrder = 2;
   scene.add(arc);
@@ -396,7 +408,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
         Object.assign(chip.style, {
           position: 'absolute', transform: 'translate(-50%, -50%)', width: '44px', height: '44px',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', letterSpacing: '.2px',
-          color: '#EAEAEA', background: 'rgba(10,12,24,.72)', border: '1px solid rgba(255,255,255,.10)', borderRadius: '50%',
+          color: 'var(--note-text, var(--text))', background: 'var(--note-bg)', border: '1px solid var(--note-border)', borderRadius: '50%',
           boxShadow: '0 6px 20px rgba(0,0,0,.35)', pointerEvents: 'auto', whiteSpace: 'nowrap', zIndex: 7, cursor: 'grab', userSelect: 'none', touchAction: 'none'
         });
         attachChipListeners(chip, idx);
@@ -610,11 +622,11 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
             el.style.left = `${x}px`;
             el.style.top = `${y}px`;
             el.style.boxShadow = (idx===hoveredIdxRef.current || idx===selectedIdxRef.current)
-              ? '0 10px 30px rgba(0,0,0,.55), 0 0 0 2px rgba(159,180,255,.8)'
+              ? '0 10px 30px rgba(0,0,0,.55), 0 0 0 2px var(--focus-ring, rgba(159,180,255,.8))'
               : '0 6px 20px rgba(0,0,0,.35)';
             el.style.border = (idx===selectedIdxRef.current)
-              ? '1px solid rgba(159,180,255,.85)'
-              : '1px solid rgba(255,255,255,.10)';
+              ? '1px solid var(--focus-ring, rgba(159,180,255,.85))'
+              : '1px solid var(--note-border)';
             // opcional: escalar ligeramente según distancia a borde para mayor legibilidad
           }
         }
@@ -658,6 +670,28 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
     }
     animate();
 
+    // Respond to light/dark theme changes
+    function applyThemeToThree() {
+      try {
+        scene.background = new THREE.Color(readCssVar('--map-bg', readCssVar('--bg-wrap', '#0a0a15')));
+        plane.material.color.set(readCssVar('--map-plane', '#10162f'));
+        const gridCol = readCssVar('--grid-medium', '#2a3a7a');
+        if (gridRef.current) {
+          gridRef.current.children.forEach(ch => { if (ch.material?.color) ch.material.color.set(gridCol); });
+        }
+        const accent = readCssVar('--accent', '#ff77aa');
+        arc.material?.color?.set(accent);
+        if (arcsGroupRef.current) arcsGroupRef.current.children.forEach(ch => ch.material?.color?.set(accent));
+      } catch {}
+    }
+    applyThemeToThree();
+    const themeObserver = new MutationObserver(muts => {
+      for (const m of muts) {
+        if (m.type === 'attributes' && m.attributeName === 'data-theme') { applyThemeToThree(); break; }
+      }
+    });
+    themeObserver.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+
     const onResize = () => {
       const w = mountEl.clientWidth, h = mountEl.clientHeight;
       renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix();
@@ -692,6 +726,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
       // limpiar sombras y guía
       nodesRef.current.forEach(n=>{ if (n.shadow && n.shadow.parent) n.shadow.parent.remove(n.shadow); });
       if (guideRef && guideRef.current && guideRef.current.parent) guideRef.current.parent.remove(guideRef.current);
+      try { themeObserver.disconnect(); } catch {}
     };
   }, []);
 
@@ -716,7 +751,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
       <div ref={mountRef} style={{ width:'100%', height:'100%' }} />
   <div ref={labelsRef} style={{ position:'absolute', inset:0, pointerEvents:'auto', zIndex:5 }} />
       {toast && (
-        <div style={{position:'absolute', left:'50%', transform:'translateX(-50%)', bottom:'max(80px, calc(56px + env(safe-area-inset-bottom)))', background:'rgba(10,12,24,.7)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.12)', padding:'10px 14px', borderRadius:10, fontSize:12, zIndex:12, boxShadow:'0 8px 24px rgba(0,0,0,.35)'}}>
+        <div style={{position:'absolute', left:'50%', transform:'translateX(-50%)', bottom:'max(80px, calc(56px + env(safe-area-inset-bottom)))', background:'var(--panel-bg)', color:'var(--text)', border:'1px solid var(--panel-border)', padding:'10px 14px', borderRadius:10, fontSize:12, zIndex:12, boxShadow:'0 8px 24px rgba(0,0,0,.35)'}}>
           1 dedo: mover · 2 dedos: pan/zoom · Pinza para zoom
         </div>
       )}

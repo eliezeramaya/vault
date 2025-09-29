@@ -2,8 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 // Eisenhower Matrix with liquid-glass panel and a 72×72 = 5184 cell grid
 export default function EisenhowerPanel(){
-  const COLS = 72
-  const ROWS = 72
+  // Canvas and chip sizing
+  const CHIP_PX = 120 // fixed chip size in CSS pixels (pre-scale)
+  const CANVAS_PX = 2400 // virtual canvas side length in CSS pixels (pre-scale)
+  const COLS = 96
+  const ROWS = 96
   const MIDC = COLS/2
   const MIDR = ROWS/2
   const MAX_TEXT = 140
@@ -23,6 +26,9 @@ export default function EisenhowerPanel(){
   const [pingIds, setPingIds] = useState(new Set())
   const gridRef = useRef(null)
   const stageWrapRef = useRef(null)
+  const panRef = useRef({ x: 0, y: 0 })
+  const panStartRef = useRef(null) // { x, y, startX, startY }
+  const [pan, setPan] = useState({ x: 0, y: 0 })
   const pointersRef = useRef(new Map()) // pointerId -> {x,y}
   const pinchRef = useRef(null) // { startDist, startZoom }
 
@@ -59,19 +65,25 @@ export default function EisenhowerPanel(){
 
   const clamp = (v,min,max)=> Math.max(min, Math.min(max, v))
   const clientToCell = (clientX, clientY)=>{
-    const el = gridRef.current
-    if (!el) return { col:0, row:0 }
-    const rect = el.getBoundingClientRect()
-    const x = clamp((clientX - rect.left) / rect.width, 0, 0.999999)
-    const y = clamp((clientY - rect.top) / rect.height, 0, 0.999999)
-    const col = Math.floor(x * COLS)
-    const row = Math.floor(y * ROWS)
+    const wrap = stageWrapRef.current
+    if (!wrap) return { col:0, row:0 }
+    const rect = wrap.getBoundingClientRect()
+    // screen position relative to wrapper
+    const sx = clientX - rect.left
+    const sy = clientY - rect.top
+    // invert pan and zoom to get canvas coordinates (0..CANVAS_PX)
+    const cx = (sx - pan.x) / (zoom || 1)
+    const cy = (sy - pan.y) / (zoom || 1)
+    const nx = clamp(cx / CANVAS_PX, 0, 0.999999)
+    const ny = clamp(cy / CANVAS_PX, 0, 0.999999)
+    const col = Math.floor(nx * COLS)
+    const row = Math.floor(ny * ROWS)
     return { col, row }
   }
 
-  const cellCenterPct = (col,row)=> ({
-    left: `${((col + 0.5) / COLS) * 100}%`,
-    top: `${((row + 0.5) / ROWS) * 100}%`
+  const cellCenterPx = (col,row)=> ({
+    left: ((col + 0.5) / COLS) * CANVAS_PX,
+    top:  ((row + 0.5) / ROWS) * CANVAS_PX
   })
 
   const addNote = (col,row,text,idOverride)=>{
@@ -109,33 +121,52 @@ export default function EisenhowerPanel(){
 
   const quadrantCenter = (q)=>{
     // Seed points adjacent to the central axes
-    if (q==='TL') return { col: MIDC-1, row: MIDR-1 }
-    if (q==='TR') return { col: MIDC,   row: MIDR-1 }
-    if (q==='BL') return { col: MIDC-1, row: MIDR }
-    return { col: MIDC,   row: MIDR } // BR
+    if (q==='TL') return { col: Math.floor(MIDC)-1, row: Math.floor(MIDR)-1 }
+    if (q==='TR') return { col: Math.floor(MIDC),   row: Math.floor(MIDR)-1 }
+    if (q==='BL') return { col: Math.floor(MIDC)-1, row: Math.floor(MIDR) }
+    return { col: Math.floor(MIDC),   row: Math.floor(MIDR) } // BR
   }
 
-  // Compute chip half-span in cell units based on current grid size (visual overlap independent of zoom)
-  const chipHalfSpanCells = ()=>{
-    const rect = gridRef.current?.getBoundingClientRect?.()
-    if (!rect || !rect.width || !rect.height){
-      // Fallback heuristic if not measurable yet
-      return { hc: Math.ceil((COLS/6)/2), hr: Math.ceil((ROWS/6)/2) }
+  // Compute chip integer span in cell units (independent of zoom) and enforce a 1-cell gap between chips
+  const GAP_CELLS = 1 // desired empty grid cells between chip edges
+  const chipSpanCells = ()=>{
+    // Map fixed chip px to whole-cell span using virtual canvas size
+    const w = Math.ceil((CHIP_PX / CANVAS_PX) * COLS)
+    const h = Math.ceil((CHIP_PX / CANVAS_PX) * ROWS)
+    return { w, h }
+  }
+
+  // Ensure a chip centered at (col,row) stays fully within its quadrant and does not overlap central axes
+  const withinAxisBuffer = (col, row)=>{
+    const { w, h } = chipSpanCells()
+    const hw = Math.floor(w/2)
+    const hh = Math.floor(h/2)
+    // Global bounds
+    if (col - hw < 0 || col + hw > COLS-1) return false
+    if (row - hh < 0 || row + hh > ROWS-1) return false
+    const q = getQuadrant(col, row)
+    if (q === 'TL'){
+      return (col + hw) <= (Math.floor(MIDC) - 1) && (row + hh) <= (Math.floor(MIDR) - 1)
+    } else if (q === 'TR'){
+      return (col - hw) >= Math.floor(MIDC) && (row + hh) <= (Math.floor(MIDR) - 1)
+    } else if (q === 'BL'){
+      return (col + hw) <= (Math.floor(MIDC) - 1) && (row - hh) >= Math.floor(MIDR)
     }
-    // Normalize by zoom since getBoundingClientRect is affected by CSS transform scale
-    const effectiveW = rect.width / (zoom || 1)
-    const effectiveH = rect.height / (zoom || 1)
-    const hc = Math.ceil((240 / effectiveW) * COLS / 2)
-    const hr = Math.ceil((240 / effectiveH) * ROWS / 2)
-    return { hc, hr }
+    // BR
+    return (col - hw) >= Math.floor(MIDC) && (row - hh) >= Math.floor(MIDR)
   }
 
   // Does a chip placed at (col,row) collide visually with any other note's chip?
   const collidesAt = (col,row, excludeId)=>{
-    const { hc, hr } = chipHalfSpanCells()
+    // Keep-out around central axes
+    if (!withinAxisBuffer(col, row)) return true
+    const { w, h } = chipSpanCells()
+    // With 1-cell gap: treat as collision if centers are within (span + gap - 1) cells on both axes
+    const dxLimit = w + GAP_CELLS - 1
+    const dyLimit = h + GAP_CELLS - 1
     for (const n of notes){
       if (excludeId && n.id === excludeId) continue
-      if (Math.abs(col - n.col) <= hc*2 && Math.abs(row - n.row) <= hr*2) return true
+      if (Math.abs(col - n.col) <= dxLimit && Math.abs(row - n.row) <= dyLimit) return true
     }
     return false
   }
@@ -153,6 +184,7 @@ export default function EisenhowerPanel(){
         for (const p of candidates){
           if (!isInQuadrant(p.col,p.row,q)) continue
           if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!withinAxisBuffer(p.col, p.row)) continue
           if (!collidesAt(p.col, p.row)) return p
         }
       }
@@ -164,6 +196,7 @@ export default function EisenhowerPanel(){
         for (const p of candidates){
           if (!isInQuadrant(p.col,p.row,q)) continue
           if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!withinAxisBuffer(p.col, p.row)) continue
           if (!collidesAt(p.col, p.row)) return p
         }
       }
@@ -184,6 +217,7 @@ export default function EisenhowerPanel(){
         for (const p of candidates){
           if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
           if (!isInQuadrant(p.col, p.row, q)) continue
+          if (!withinAxisBuffer(p.col, p.row)) continue
           if (!collidesAt(p.col, p.row, excludeId)) return p
         }
       }
@@ -195,6 +229,7 @@ export default function EisenhowerPanel(){
         for (const p of candidates){
           if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
           if (!isInQuadrant(p.col, p.row, q)) continue
+          if (!withinAxisBuffer(p.col, p.row)) continue
           if (!collidesAt(p.col, p.row, excludeId)) return p
         }
       }
@@ -206,10 +241,13 @@ export default function EisenhowerPanel(){
   const nearestNonCollidingInQuadrantIn = (arr, targetCol, targetRow, excludeId)=>{
     const q = getQuadrant(targetCol, targetRow)
     const maxR = Math.max(COLS, ROWS)
-    const { hc, hr } = chipHalfSpanCells()
-    const dxLimit = hc * 2
-    const dyLimit = hr * 2
-    const collidesIn = (c,r)=> arr.some(n=> (!excludeId || n.id!==excludeId) && Math.abs(c - n.col) <= dxLimit && Math.abs(r - n.row) <= dyLimit)
+    const { w, h } = chipSpanCells()
+    const dxLimit = w + GAP_CELLS - 1
+    const dyLimit = h + GAP_CELLS - 1
+    const collidesIn = (c,r)=>{
+      if (!withinAxisBuffer(c, r)) return true
+      return arr.some(n=> (!excludeId || n.id!==excludeId) && Math.abs(c - n.col) <= dxLimit && Math.abs(r - n.row) <= dyLimit)
+    }
     for (let r=0; r<=maxR; r++){
       for (let dc=-r; dc<=r; dc++){
         const candidates = [
@@ -495,8 +533,8 @@ export default function EisenhowerPanel(){
   const wrap = {
     position:'absolute', inset:0, zIndex:10,
     display:'grid', placeItems:'center',
-    background:'radial-gradient(1200px 800px at 70% 20%, rgba(240,55,93,.05), transparent 60%), linear-gradient(180deg,#0a0a15 0%, #0a0f1f 100%)',
-    color:'#EAEAEA',
+    background:'var(--bg-wrap)',
+    color:'var(--text)',
     fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, \'Liberation Mono\', monospace'
   }
 
@@ -506,15 +544,15 @@ export default function EisenhowerPanel(){
     aspectRatio:'1 / 1',
     borderRadius:20,
     padding:16,
-    background:'linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02))',
-    border:'1px solid rgba(255,255,255,.12)',
+    background:'var(--panel-bg)',
+    border:'1px solid var(--panel-border)',
     boxShadow:'0 30px 80px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08)',
     backdropFilter:'blur(18px) saturate(1.15)',
     WebkitBackdropFilter:'blur(18px) saturate(1.15)'
   }
 
   const grid = {
-    position:'absolute', inset:0,
+    position:'absolute', left:0, top:0, width:'100%', height:'100%',
     // Base subtle background to enhance glass feel
     background:'linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01))'
   }
@@ -593,13 +631,71 @@ export default function EisenhowerPanel(){
   const qBR = { position:'absolute', left:'50%', top:'50%', width:'50%', height:'50%',
     background:`radial-gradient(220px 160px at 0% 0%, rgba(255,255,255,${aBR}), rgba(255,255,255,0) 65%)` }
 
+  // Visual keep-out band around the central axes based on chip span (centers cannot enter this band)
+  const keepOut = useMemo(()=>{
+    const { w, h } = chipSpanCells()
+    const hw = Math.floor(w/2)
+    const hh = Math.floor(h/2)
+    const wPct = Math.max(0, (2*hw) / COLS * 100)
+    const hPct = Math.max(0, (2*hh) / ROWS * 100)
+    return { wPct, hPct }
+  }, [COLS, ROWS])
+  const keepOutLayer = { position:'absolute', inset:0, pointerEvents:'none' }
+  const keepOutColor = 'rgba(240,55,93,.08)'
+
+  // Capacity estimate based on chip span in cell units
+  const capacity = useMemo(()=>{
+    const { w, h } = chipSpanCells()
+    const stepX = w + GAP_CELLS // center-to-center spacing that guarantees ≥1 empty cell between edges
+    const stepY = h + GAP_CELLS
+    const colsFit = Math.floor(COLS / stepX)
+    const rowsFit = Math.floor(ROWS / stepY)
+    return Math.max(1, colsFit * rowsFit)
+  }, [COLS, ROWS, zoom])
+
+  // Dense repack (simple lattice sweep) within quadrants, preserves per-quadrant order
+  const repackDense = ()=>{
+    const { w, h } = chipSpanCells()
+    const stepX = w + GAP_CELLS
+    const stepY = h + GAP_CELLS
+    const lanes = {
+      TL: { c0:0,    c1:Math.floor(MIDC)-1, r0:0,    r1:Math.floor(MIDR)-1 },
+      TR: { c0:Math.floor(MIDC), c1:COLS-1, r0:0,    r1:Math.floor(MIDR)-1 },
+      BL: { c0:0,    c1:Math.floor(MIDC)-1, r0:Math.floor(MIDR), r1:ROWS-1 },
+      BR: { c0:Math.floor(MIDC), c1:COLS-1, r0:Math.floor(MIDR), r1:ROWS-1 }
+    }
+    setNotes((arr)=>{
+      const byQ = { TL:[], TR:[], BL:[], BR:[] }
+      for (const n of arr){ byQ[getQuadrant(n.col,n.row)].push(n) }
+      const next = []
+      for (const q of ['TL','TR','BL','BR']){
+        let i = 0
+        const { c0,c1,r0,r1 } = lanes[q]
+        for (let r=r0; r<=r1 && i<byQ[q].length; r+=stepY){
+          for (let c=c0; c<=c1 && i<byQ[q].length; c+=stepX){
+            if (!withinAxisBuffer(c, r)) continue
+            const src = byQ[q][i++]
+            next.push({ ...src, col:c, row:r })
+          }
+        }
+        // If overflow, place remaining at nearest non-colliding slots
+        for (; i<byQ[q].length; i++){
+          const src = byQ[q][i]
+          const near = nearestNonCollidingInQuadrantIn(next, src.col, src.row, src.id) || nextSlotForQuadrant(q)
+          next.push({ ...src, col:near.col, row:near.row })
+        }
+      }
+      return next
+    })
+  }
+
   const noteStyle = (n)=>{
-    const { left, top } = cellCenterPct(n.col, n.row)
+    const { left, top } = cellCenterPx(n.col, n.row)
     // No offset for overlapping - each cell should have only one note
     return {
       position:'absolute', left, top, transform:'translate(-50%, -50%)',
-      background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.4)',
-      boxSizing:'border-box', width:240, height:240, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
+      background:'var(--note-bg)', color:'var(--text)', border:'1px solid var(--note-border)',
+  boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
       fontSize:11, fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', pointerEvents:'auto', userSelect:'text',
       lineHeight:1.3, whiteSpace:'pre-wrap', wordBreak:'break-word', overflowWrap:'anywhere', overflow:'hidden',
       touchAction:'none', cursor:'text',
@@ -608,7 +704,7 @@ export default function EisenhowerPanel(){
   }
 
   const noteTextStyle = {
-    display:'-webkit-box', WebkitBoxOrient:'vertical', WebkitLineClamp:16,
+    display:'-webkit-box', WebkitBoxOrient:'vertical', WebkitLineClamp:8,
     overflow:'hidden', textOverflow:'ellipsis', width:'100%', height:'calc(100% - 26px)',
     fontSize:11, lineHeight:1.3, fontFamily:'inherit'
   }
@@ -619,11 +715,11 @@ export default function EisenhowerPanel(){
 
   const composerStyle = (c)=>{
     if (!c) return { display:'none' }
-    const { left, top } = cellCenterPct(c.col, c.row)
+    const { left, top } = cellCenterPx(c.col, c.row)
     return {
       position:'absolute', left, top, transform:'translate(-50%, -50%)',
-      background:'rgba(10,12,24,0.75)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,0.4)',
-      boxSizing:'border-box', width:240, height:240, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
+      background:'var(--composer-bg)', color:'var(--composer-text)', border:'1px solid var(--note-border)',
+  boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
       fontSize:11, fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', pointerEvents:'auto',
       backdropFilter:'url(#distorsion)', WebkitBackdropFilter:'url(#distorsion)'
     }
@@ -651,9 +747,9 @@ export default function EisenhowerPanel(){
   }
 
   // Palette for grid lines (grayscale)
-  const minor = 'rgba(255,255,255,.06)'
-  const medium = 'rgba(255,255,255,.13)'
-  const major = 'rgba(255,255,255,.22)'
+  const minor = 'var(--grid-minor)'
+  const medium = 'var(--grid-medium)'
+  const major = 'var(--grid-major)'
 
   // Removed per-cell style because we no longer render per-cell nodes at 720×720
 
@@ -682,19 +778,55 @@ export default function EisenhowerPanel(){
         /* Ping visual when a note is re-routed */
         @keyframes eh-ping-ring { from { transform: translate(-50%, -50%) scale(0.8); opacity: .6; } to { transform: translate(-50%, -50%) scale(1.35); opacity: 0; } }
         @keyframes eh-ping-glow { from { box-shadow: 0 0 0 rgba(240,55,93,.6); } 50% { box-shadow: 0 0 18px rgba(240,55,93,.55); } to { box-shadow: 0 0 0 rgba(240,55,93,0); } }
-        .eh-note.ping::after { content:''; position:absolute; left:50%; top:50%; width:240px; height:240px; border-radius:12px; border:2px solid rgba(240,55,93,.75); transform: translate(-50%, -50%); animation: eh-ping-ring 480ms ease-out forwards; pointer-events:none; }
+  .eh-note.ping::after { content:''; position:absolute; left:50%; top:50%; width:120px; height:120px; border-radius:10px; border:2px solid rgba(240,55,93,.75); transform: translate(-50%, -50%); animation: eh-ping-ring 480ms ease-out forwards; pointer-events:none; }
         .eh-note.ping { animation: eh-ping-glow 480ms ease-out; }
       `}</style>
 
       <div style={panel} aria-label="Panel liquid glass">
-        {/* Zoom stage wrapper */}
-  <div ref={stageWrapRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} style={{position:'absolute', inset:16, borderRadius:14, overflow:'hidden', touchAction:'none', overscrollBehavior:'contain'}}>
-          <div style={{position:'absolute', inset:0, transform:`scale(${zoom})`, transformOrigin:'center center'}}>
+        {/* Zoom/Pan stage wrapper (viewport) */}
+        <div
+          ref={stageWrapRef}
+          onPointerDown={(e)=>{
+            onPointerDown(e)
+            // start panning with middle-click or Alt+left-click on empty space
+            if (dragId) return
+            const isMouse = e.pointerType === 'mouse'
+            const wantPan = isMouse && (e.button === 1 || (e.button === 0 && (e.altKey || e.shiftKey)))
+            if (!wantPan) return
+            const rect = stageWrapRef.current.getBoundingClientRect()
+            panStartRef.current = { x: pan.x, y: pan.y, startX: e.clientX, startY: e.clientY }
+            e.preventDefault()
+          }}
+          onPointerMove={(e)=>{
+            onPointerMove(e)
+            if (panStartRef.current && e.buttons){
+              const { x, y, startX, startY } = panStartRef.current
+              const nx = x + (e.clientX - startX)
+              const ny = y + (e.clientY - startY)
+              panRef.current = { x: nx, y: ny }
+              setPan(panRef.current)
+              e.preventDefault()
+            }
+          }}
+          onPointerUp={(e)=>{ onPointerUp(e); panStartRef.current = null }}
+          onPointerCancel={(e)=>{ onPointerUp(e); panStartRef.current = null }}
+          style={{position:'absolute', inset:16, borderRadius:14, overflow:'hidden', touchAction:'none', overscrollBehavior:'contain'}}
+        >
+          {/* Canvas content */}
+          <div style={{position:'absolute', left:0, top:0, width:CANVAS_PX, height:CANVAS_PX, transform:`translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin:'top left'}}>
             {/* Grid layer: click to add note */}
-            <div ref={gridRef} className="eh-grid" style={grid} role="grid" aria-rowcount={ROWS} aria-colcount={COLS} onClick={onGridClick} onDoubleClick={onGridDoubleClick} />
+            <div ref={gridRef} className="eh-grid" style={{...grid, width: '100%', height: '100%'}} role="grid" aria-rowcount={ROWS} aria-colcount={COLS} onClick={onGridClick} onDoubleClick={onGridDoubleClick} />
+
+              {/* Keep-out band (beneath axis lines) */}
+              <div style={{...keepOutLayer, width:'100%', height:'100%'}} aria-hidden>
+                {/* Vertical band centered on Y axis */}
+                <div style={{ position:'absolute', top:0, bottom:0, left:`calc(50% - ${keepOut.wPct/2}%)`, width:`${keepOut.wPct}%`, background: 'var(--keepout)' }} />
+                {/* Horizontal band centered on X axis */}
+                <div style={{ position:'absolute', left:0, right:0, top:`calc(50% - ${keepOut.hPct/2}%)`, height:`${keepOut.hPct}%`, background: 'var(--keepout)' }} />
+              </div>
 
             {/* Axis gradient overlays (beneath notes) */}
-            <div style={axisLayer} aria-hidden>
+            <div style={{...axisLayer, width: '100%', height: '100%'}} aria-hidden>
               <div style={axisXLeft} />
               <div style={axisXRight} />
               <div style={axisYTop} />
@@ -702,7 +834,7 @@ export default function EisenhowerPanel(){
             </div>
 
             {/* Quadrant heat overlays (beneath notes) */}
-            <div style={quadLayer} aria-hidden>
+            <div style={{...quadLayer, width: '100%', height: '100%'}} aria-hidden>
               <div style={qTL} />
               <div style={qTR} />
               <div style={qBL} />
@@ -710,7 +842,7 @@ export default function EisenhowerPanel(){
             </div>
 
             {/* Notes layer with inline editor */}
-            <div style={notesLayer} aria-live="polite">
+            <div style={{...notesLayer, width: '100%', height: '100%'}} aria-live="polite">
               {notes.map(n=> {
                 const isEditing = composer && composer.id === n.id
                 return (
@@ -819,8 +951,11 @@ export default function EisenhowerPanel(){
           </div>
         </div>
 
-        {/* Zoom controls */}
-        <div style={{position:'absolute', top:8, right:8, display:'flex', gap:8, zIndex:5}}>
+        {/* Zoom controls and capacity */}
+        <div style={{position:'absolute', top:8, right:8, display:'flex', gap:8, alignItems:'center', zIndex:5}}>
+          <span aria-live="polite" style={{fontSize:11, opacity:.8}}>Notas: {notes.length} / ~{capacity}</span>
+          <button aria-label="Reordenar denso" title="Reordenar denso" onClick={repackDense}
+            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>↻</button>
           <button aria-label="Zoom out" title="Zoom -" onClick={()=> setZoom(z=> Math.max(ZMIN, +(z - ZSTEP).toFixed(2)))}
             style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>−</button>
           <button aria-label="Reset zoom" title="Reset" onClick={()=> setZoom(1)}
