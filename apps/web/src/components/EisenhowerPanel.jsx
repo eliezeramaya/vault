@@ -77,17 +77,18 @@ export default function EisenhowerPanel(){
   const addNote = (col,row,text,idOverride)=>{
     const id = idOverride || Math.random().toString(36).slice(2,9)
     const t = (text||'Nota').slice(0, MAX_TEXT)
-    
-    // Check if cell is already occupied and find next free slot in same cell if needed
-    const existingInCell = notes.filter(n => n.col === col && n.row === row)
-    if (existingInCell.length > 0) {
-      // If cell is occupied, find nearest free cell in same quadrant
-      const q = getQuadrant(col, row)
-      const slot = nextSlotForQuadrant(q)
-      setNotes((arr)=> [...arr, { id, col: slot.col, row: slot.row, text: t }])
-    } else {
-      setNotes((arr)=> [...arr, { id, col, row, text: t }])
+    // Enforce non-colliding placement
+    let target = { col, row }
+    if (collidesAt(col, row, id)){
+      const near = nearestNonCollidingInQuadrant(col, row, id)
+      if (near) target = near
+      else {
+        const q = getQuadrant(col,row)
+        const slot = nextSlotForQuadrant(q)
+        target = slot
+      }
     }
+    setNotes((arr)=> [...arr, { id, col: target.col, row: target.row, text: t }])
   }
 
   const getQuadrant = (col,row)=>{
@@ -114,40 +115,126 @@ export default function EisenhowerPanel(){
     return { col: MIDC,   row: MIDR } // BR
   }
 
+  // Compute chip half-span in cell units based on current grid size (visual overlap independent of zoom)
+  const chipHalfSpanCells = ()=>{
+    const rect = gridRef.current?.getBoundingClientRect?.()
+    if (!rect || !rect.width || !rect.height){
+      // Fallback heuristic if not measurable yet
+      return { hc: Math.ceil((COLS/6)/2), hr: Math.ceil((ROWS/6)/2) }
+    }
+    // Normalize by zoom since getBoundingClientRect is affected by CSS transform scale
+    const effectiveW = rect.width / (zoom || 1)
+    const effectiveH = rect.height / (zoom || 1)
+    const hc = Math.ceil((240 / effectiveW) * COLS / 2)
+    const hr = Math.ceil((240 / effectiveH) * ROWS / 2)
+    return { hc, hr }
+  }
+
+  // Does a chip placed at (col,row) collide visually with any other note's chip?
+  const collidesAt = (col,row, excludeId)=>{
+    const { hc, hr } = chipHalfSpanCells()
+    for (const n of notes){
+      if (excludeId && n.id === excludeId) continue
+      if (Math.abs(col - n.col) <= hc*2 && Math.abs(row - n.row) <= hr*2) return true
+    }
+    return false
+  }
+
+  // Find next non-colliding slot scanning from quadrant center outward
   const nextSlotForQuadrant = (q)=>{
-    // Build occupancy set per cell
-    const occ = new Set()
-    for (const n of notes){ occ.add(`${n.col},${n.row}`) }
     const { col: c0, row: r0 } = quadrantCenter(q)
     const maxR = Math.max(COLS, ROWS)
-    // r = 0..max, search ring by ring from center outwards
     for (let r=0; r<=maxR; r++){
-      // Traverse square ring perimeter at distance r
       for (let dc=-r; dc<=r; dc++){
         const candidates = [
-          { col: c0 + dc, row: r0 - r }, // top edge
-          { col: c0 + dc, row: r0 + r }, // bottom edge
+          { col: c0 + dc, row: r0 - r },
+          { col: c0 + dc, row: r0 + r },
         ]
         for (const p of candidates){
           if (!isInQuadrant(p.col,p.row,q)) continue
-          const key = `${p.col},${p.row}`
-          if (!occ.has(key)) return p
+          if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!collidesAt(p.col, p.row)) return p
         }
       }
       for (let dr=-r+1; dr<=r-1; dr++){
         const candidates = [
-          { col: c0 - r, row: r0 + dr }, // left edge
-          { col: c0 + r, row: r0 + dr }, // right edge
+          { col: c0 - r, row: r0 + dr },
+          { col: c0 + r, row: r0 + dr },
         ]
         for (const p of candidates){
           if (!isInQuadrant(p.col,p.row,q)) continue
-          const key = `${p.col},${p.row}`
-          if (!occ.has(key)) return p
+          if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!collidesAt(p.col, p.row)) return p
         }
       }
     }
-    // Fallback to quadrant center if somehow filled
     return quadrantCenter(q)
+  }
+
+  // Find nearest non-colliding slot around an arbitrary target within the same quadrant
+  const nearestNonCollidingInQuadrant = (targetCol, targetRow, excludeId)=>{
+    const q = getQuadrant(targetCol, targetRow)
+    const maxR = Math.max(COLS, ROWS)
+    for (let r=0; r<=maxR; r++){
+      for (let dc=-r; dc<=r; dc++){
+        const candidates = [
+          { col: targetCol + dc, row: targetRow - r },
+          { col: targetCol + dc, row: targetRow + r },
+        ]
+        for (const p of candidates){
+          if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!isInQuadrant(p.col, p.row, q)) continue
+          if (!collidesAt(p.col, p.row, excludeId)) return p
+        }
+      }
+      for (let dr=-r+1; dr<=r-1; dr++){
+        const candidates = [
+          { col: targetCol - r, row: targetRow + dr },
+          { col: targetCol + r, row: targetRow + dr },
+        ]
+        for (const p of candidates){
+          if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!isInQuadrant(p.col, p.row, q)) continue
+          if (!collidesAt(p.col, p.row, excludeId)) return p
+        }
+      }
+    }
+    return null
+  }
+
+  // Array-aware variant for use inside setNotes callback to avoid stale reads
+  const nearestNonCollidingInQuadrantIn = (arr, targetCol, targetRow, excludeId)=>{
+    const q = getQuadrant(targetCol, targetRow)
+    const maxR = Math.max(COLS, ROWS)
+    const { hc, hr } = chipHalfSpanCells()
+    const dxLimit = hc * 2
+    const dyLimit = hr * 2
+    const collidesIn = (c,r)=> arr.some(n=> (!excludeId || n.id!==excludeId) && Math.abs(c - n.col) <= dxLimit && Math.abs(r - n.row) <= dyLimit)
+    for (let r=0; r<=maxR; r++){
+      for (let dc=-r; dc<=r; dc++){
+        const candidates = [
+          { col: targetCol + dc, row: targetRow - r },
+          { col: targetCol + dc, row: targetRow + r },
+        ]
+        for (const p of candidates){
+          if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!isInQuadrant(p.col, p.row, q)) continue
+          if (!collidesIn(p.col, p.row)) return p
+        }
+      }
+      for (let dr=-r+1; dr<=r-1; dr++){
+        const candidates = [
+          { col: targetCol - r, row: targetRow + dr },
+          { col: targetCol + r, row: targetRow + dr },
+        ]
+        for (const p of candidates){
+          if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!isInQuadrant(p.col, p.row, q)) continue
+          if (!collidesIn(p.col, p.row)) return p
+        }
+      }
+    }
+    return null
   }
 
   // Find the nearest free cell around a target position within the same quadrant
@@ -192,7 +279,9 @@ export default function EisenhowerPanel(){
     // If already editing, ignore new starts to prevent losing text
     if (composer) return
     const q = getQuadrant(clickedCol,clickedRow)
-    const slot = nextSlotForQuadrant(q)
+    // Prefer nearest to click that doesn't collide
+    const near = nearestNonCollidingInQuadrant(clickedCol, clickedRow)
+    const slot = near || nextSlotForQuadrant(q)
     setComposer({ col: slot.col, row: slot.row, text:'' })
   }
   const cancelComposer = ()=> setComposer(null)
@@ -215,7 +304,7 @@ export default function EisenhowerPanel(){
     const t = quickInput.trim()
     if (!t) return
     
-    // Find the quadrant with least notes and place there
+  // Find the quadrant with least notes and place at nearest non-colliding slot
     const counts = { TL:0, TR:0, BL:0, BR:0 }
     for (const n of notes){
       const q = getQuadrant(n.col, n.row)
@@ -224,8 +313,9 @@ export default function EisenhowerPanel(){
     
     // Pick quadrant with minimum count
     const minQuad = Object.keys(counts).reduce((a,b)=> counts[a] <= counts[b] ? a : b)
-    const slot = nextSlotForQuadrant(minQuad)
-    
+    const center = quadrantCenter(minQuad)
+    const near = nearestNonCollidingInQuadrant(center.col, center.row)
+    const slot = near || nextSlotForQuadrant(minQuad)
     addNote(slot.col, slot.row, t)
     setQuickInput('')
   }
@@ -237,12 +327,11 @@ export default function EisenhowerPanel(){
       const { clientX, clientY } = ev.touches?.[0] || ev
       const { col, row } = clientToCell(clientX, clientY)
       setNotes((arr)=>{
-        // If target cell is occupied by another note, re-route to nearest free within same quadrant
-        const occupied = arr.some(n => n.id !== dragId && n.col === col && n.row === row)
-        if (occupied){
-          const p = nearestFreeInQuadrant(col, row, dragId)
+        // If target placement would collide visually, re-route to nearest non-colliding within same quadrant
+        const wouldCollide = collidesAt(col, row, dragId)
+        if (wouldCollide){
+          const p = nearestNonCollidingInQuadrantIn(arr, col, row, dragId)
           if (!p) return arr
-          // Trigger ping visual on the moved note
           setTimeout(()=> triggerPing(dragId), 0)
           return arr.map(n=> n.id===dragId ? { ...n, col: p.col, row: p.row } : n)
         }
@@ -271,12 +360,15 @@ export default function EisenhowerPanel(){
     if (composer) return
     if (e.target.closest('.eh-note') || e.target.closest('.eh-composer')) return
     const { col, row } = clientToCell(e.clientX, e.clientY)
-    // Determine target slot honoring one-note-per-cell rule
+    // Determine target slot honoring non-collision rule
     let target = { col, row }
-    const occupied = notes.some(n => n.col===col && n.row===row)
-    if (occupied){
-      const q = getQuadrant(col,row)
-      target = nextSlotForQuadrant(q)
+    if (collidesAt(col, row)){
+      const near = nearestNonCollidingInQuadrant(col, row)
+      if (near) target = near
+      else {
+        const q = getQuadrant(col,row)
+        target = nextSlotForQuadrant(q)
+      }
     }
     const newId = Math.random().toString(36).slice(2,9)
     addNote(target.col, target.row, '', newId)
@@ -651,9 +743,9 @@ export default function EisenhowerPanel(){
                           setNotes(arr=>{
                             const nextCol = clamp(n.col + dcol,0,COLS-1)
                             const nextRow = clamp(n.row + drow,0,ROWS-1)
-                            const occupied = arr.some(x => x.id !== n.id && x.col === nextCol && x.row === nextRow)
-                            if (occupied){
-                              const p = nearestFreeInQuadrant(nextCol, nextRow, n.id)
+                            const wouldCollide = collidesAt(nextCol, nextRow, n.id)
+                            if (wouldCollide){
+                              const p = nearestNonCollidingInQuadrantIn(arr, nextCol, nextRow, n.id)
                               if (!p) return arr
                               setTimeout(()=> triggerPing(n.id), 0)
                               return arr.map(x=> x.id===n.id ? { ...x, col: p.col, row: p.row } : x)
