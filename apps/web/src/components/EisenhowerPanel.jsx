@@ -603,6 +603,19 @@ export default function EisenhowerPanel(){
                           autoFocus
                           value={composer?.text || ''}
                           onChange={(e)=> setComposer(c=> c ? { ...c, text:e.target.value.slice(0, MAX_TEXT) } : c)}
+                          onKeyDown={(e)=>{
+                            if (e.key === 'Enter'){
+                              if (e.shiftKey){
+                                // allow newline within limit
+                                return
+                              }
+                              e.preventDefault()
+                              submitComposer()
+                            } else if (e.key === 'Escape'){
+                              e.preventDefault()
+                              cancelComposer()
+                            }
+                          }}
                           placeholder="Editar nota"
                           maxLength={MAX_TEXT}
                           style={{
