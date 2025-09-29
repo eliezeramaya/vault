@@ -132,6 +132,44 @@ export default function EisenhowerPanel(){
     return quadrantCenter(q)
   }
 
+  // Find the nearest free cell around a target position within the same quadrant
+  const nearestFreeInQuadrant = (targetCol, targetRow, excludeId)=>{
+    const q = getQuadrant(targetCol, targetRow)
+    const occ = new Set()
+    for (const n of notes){
+      if (excludeId && n.id === excludeId) continue
+      occ.add(`${n.col},${n.row}`)
+    }
+    const maxR = Math.max(COLS, ROWS)
+    for (let r=0; r<=maxR; r++){
+      for (let dc=-r; dc<=r; dc++){
+        const candidates = [
+          { col: targetCol + dc, row: targetRow - r },
+          { col: targetCol + dc, row: targetRow + r },
+        ]
+        for (const p of candidates){
+          if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!isInQuadrant(p.col, p.row, q)) continue
+          const key = `${p.col},${p.row}`
+          if (!occ.has(key)) return p
+        }
+      }
+      for (let dr=-r+1; dr<=r-1; dr++){
+        const candidates = [
+          { col: targetCol - r, row: targetRow + dr },
+          { col: targetCol + r, row: targetRow + dr },
+        ]
+        for (const p of candidates){
+          if (p.col<0 || p.col>=COLS || p.row<0 || p.row>=ROWS) continue
+          if (!isInQuadrant(p.col, p.row, q)) continue
+          const key = `${p.col},${p.row}`
+          if (!occ.has(key)) return p
+        }
+      }
+    }
+    return null
+  }
+
   const startComposerAt = (clickedCol,clickedRow)=>{
     // If already editing, ignore new starts to prevent losing text
     if (composer) return
@@ -181,9 +219,13 @@ export default function EisenhowerPanel(){
       const { clientX, clientY } = ev.touches?.[0] || ev
       const { col, row } = clientToCell(clientX, clientY)
       setNotes((arr)=>{
-        // If target cell is occupied by another note, block move
+        // If target cell is occupied by another note, re-route to nearest free within same quadrant
         const occupied = arr.some(n => n.id !== dragId && n.col === col && n.row === row)
-        if (occupied) return arr
+        if (occupied){
+          const p = nearestFreeInQuadrant(col, row, dragId)
+          if (!p) return arr
+          return arr.map(n=> n.id===dragId ? { ...n, col: p.col, row: p.row } : n)
+        }
         return arr.map(n=> n.id===dragId ? { ...n, col, row } : n)
       })
     }
@@ -584,7 +626,11 @@ export default function EisenhowerPanel(){
                             const nextCol = clamp(n.col + dcol,0,COLS-1)
                             const nextRow = clamp(n.row + drow,0,ROWS-1)
                             const occupied = arr.some(x => x.id !== n.id && x.col === nextCol && x.row === nextRow)
-                            if (occupied) return arr
+                            if (occupied){
+                              const p = nearestFreeInQuadrant(nextCol, nextRow, n.id)
+                              if (!p) return arr
+                              return arr.map(x=> x.id===n.id ? { ...x, col: p.col, row: p.row } : x)
+                            }
                             return arr.map(x=> x.id===n.id ? { ...x, col: nextCol, row: nextRow } : x)
                           })
                         }}
