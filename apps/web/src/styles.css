@@ -64,7 +64,7 @@ button { font-family: inherit; }
   opacity:.45;
 }
 .eh-note::after {
-  background: radial-gradient(140px 140px at 20% 0%, rgba(255,255,255,0.28), rgba(255,255,255,0) 60%);
+  background: radial-gradient(240px 240px at 20% 0%, rgba(255,255,255,0.28), rgba(255,255,255,0) 60%);
   opacity:.35;
 }
 .eh-note:hover {

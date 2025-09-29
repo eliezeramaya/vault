@@ -440,7 +440,7 @@ export default function EisenhowerPanel(){
     return {
       position:'absolute', left, top, transform:'translate(-50%, -50%)',
       background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.4)',
-      boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
+      boxSizing:'border-box', width:240, height:240, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
       fontSize:11, fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', pointerEvents:'auto', userSelect:'text',
       lineHeight:1.3, whiteSpace:'pre-wrap', wordBreak:'break-word', overflowWrap:'anywhere', overflow:'hidden',
       touchAction:'none', cursor:'text',
@@ -449,8 +449,8 @@ export default function EisenhowerPanel(){
   }
 
   const noteTextStyle = {
-    display:'-webkit-box', WebkitBoxOrient:'vertical', WebkitLineClamp:8,
-    overflow:'hidden', textOverflow:'ellipsis', width:'100%', height:'80px',
+    display:'-webkit-box', WebkitBoxOrient:'vertical', WebkitLineClamp:16,
+    overflow:'hidden', textOverflow:'ellipsis', width:'100%', height:'calc(100% - 26px)',
     fontSize:11, lineHeight:1.3, fontFamily:'inherit'
   }
 
@@ -464,7 +464,7 @@ export default function EisenhowerPanel(){
     return {
       position:'absolute', left, top, transform:'translate(-50%, -50%)',
       background:'rgba(10,12,24,0.75)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,0.4)',
-      boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
+      boxSizing:'border-box', width:240, height:240, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
       fontSize:11, fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', pointerEvents:'auto',
       backdropFilter:'url(#distorsion)', WebkitBackdropFilter:'url(#distorsion)'
     }
