@@ -180,7 +180,12 @@ export default function EisenhowerPanel(){
       if (!dragId) return
       const { clientX, clientY } = ev.touches?.[0] || ev
       const { col, row } = clientToCell(clientX, clientY)
-      setNotes((arr)=> arr.map(n=> n.id===dragId ? { ...n, col, row } : n))
+      setNotes((arr)=>{
+        // If target cell is occupied by another note, block move
+        const occupied = arr.some(n => n.id !== dragId && n.col === col && n.row === row)
+        if (occupied) return arr
+        return arr.map(n=> n.id===dragId ? { ...n, col, row } : n)
+      })
     }
     const up = ()=> setDragId(null)
     window.addEventListener('pointermove', move)
@@ -575,7 +580,13 @@ export default function EisenhowerPanel(){
                             return
                           } else return
                           e.preventDefault()
-                          setNotes(arr=> arr.map(x=> x.id===n.id ? { ...x, col: clamp(x.col + dcol,0,COLS-1), row: clamp(x.row + drow,0,ROWS-1) } : x))
+                          setNotes(arr=>{
+                            const nextCol = clamp(n.col + dcol,0,COLS-1)
+                            const nextRow = clamp(n.row + drow,0,ROWS-1)
+                            const occupied = arr.some(x => x.id !== n.id && x.col === nextCol && x.row === nextRow)
+                            if (occupied) return arr
+                            return arr.map(x=> x.id===n.id ? { ...x, col: nextCol, row: nextRow } : x)
+                          })
                         }}
                         role="button"
                         tabIndex={0}
