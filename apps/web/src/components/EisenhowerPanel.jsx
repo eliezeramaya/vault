@@ -553,7 +553,14 @@ export default function EisenhowerPanel(){
                         className="eh-note"
                         style={noteStyle(n)}
                         title={n.text}
-                        onPointerDown={(e)=>{ if (composer) return; e.currentTarget.setPointerCapture?.(e.pointerId); setDragId(n.id) }}
+                        onPointerDown={(e)=>{
+                          if (composer) return
+                          // Don't start drag if clicking on toolbar/actions
+                          const inToolbar = e.target && e.target.closest && e.target.closest('.eh-toolbar')
+                          if (inToolbar) return
+                          e.currentTarget.setPointerCapture?.(e.pointerId)
+                          setDragId(n.id)
+                        }}
                         onKeyDown={(e)=>{
                           if (composer) return
                           let dcol = 0, drow = 0
@@ -573,12 +580,20 @@ export default function EisenhowerPanel(){
                         aria-label={`Nota: ${n.text}. Columna ${n.col+1} de ${COLS}, fila ${n.row+1} de ${ROWS}`}
                       >
                         <span style={noteTextStyle}>{n.text}</span>
-                        <span style={noteToolbarStyle}>
-                          <span role="button" aria-label="Editar nota" title="Editar" tabIndex={-1}
+                        <span className="eh-toolbar" style={noteToolbarStyle}>
+                          <button
+                            type="button"
+                            aria-label="Editar nota"
+                            title="Editar"
+                            onPointerDown={(e)=>{ e.stopPropagation(); /* avoid parent drag */ }}
                             onClick={(e)=>{ e.stopPropagation(); setComposer({ id:n.id, col:n.col, row:n.row, text:n.text }) }}
-                            style={{background:'rgba(10,12,24,.7)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.3)', borderRadius:4, padding:'2px 4px', fontSize:9, cursor:'pointer', userSelect:'none'}}>
+                            style={{
+                              background:'rgba(10,12,24,.7)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.3)',
+                              borderRadius:4, padding:'2px 6px', fontSize:10, cursor:'pointer', userSelect:'none'
+                            }}
+                          >
                             ✎
-                          </span>
+                          </button>
                         </span>
                       </div>
                     )}
