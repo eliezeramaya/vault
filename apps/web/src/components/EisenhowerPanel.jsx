@@ -19,11 +19,13 @@ export default function EisenhowerPanel(){
 
   // Notes state and persistence
   const LS_KEY = 'eh_notes_v1'
-  const [notes, setNotes] = useState([]) // {id, col, row, text}
+  const [notes, setNotes] = useState([]) // {id, col, row, text, priority}
   const [dragId, setDragId] = useState(null)
   const [composer, setComposer] = useState(null) // {id?, col, row, text}
   const [quickInput, setQuickInput] = useState('') // Bottom panel input
   const [pingIds, setPingIds] = useState(new Set())
+  const [weightFor, setWeightFor] = useState(null) // note id or null
+  const [lastWeightTrigger, setLastWeightTrigger] = useState(null) // HTMLElement to restore focus
   const gridRef = useRef(null)
   const stageWrapRef = useRef(null)
   const panRef = useRef({ x: 0, y: 0 })
@@ -37,7 +39,10 @@ export default function EisenhowerPanel(){
       const raw = localStorage.getItem(LS_KEY)
       if (raw){
         const arr = JSON.parse(raw)
-        if (Array.isArray(arr)) setNotes(arr)
+        if (Array.isArray(arr)) {
+          // Back-compat: ensure priority exists (default 5)
+          setNotes(arr.map(n => ({ ...n, priority: (typeof n.priority === 'number' ? n.priority : 5) })))
+        }
       }
     }catch{}
   },[])
@@ -100,7 +105,7 @@ export default function EisenhowerPanel(){
         target = slot
       }
     }
-    setNotes((arr)=> [...arr, { id, col: target.col, row: target.row, text: t }])
+    setNotes((arr)=> [...arr, { id, col: target.col, row: target.row, text: t, priority: 5 }])
   }
 
   const getQuadrant = (col,row)=>{
@@ -713,6 +718,66 @@ export default function EisenhowerPanel(){
     position:'absolute', right:4, bottom:4, display:'flex', gap:4,
   }
 
+  const weightBadgeStyle = {
+    position:'absolute', left:6, bottom:6,
+    padding:'2px 6px', borderRadius:6, fontSize:10,
+    background:'rgba(10,12,24,.65)', color:'#EAEAEA',
+    border:'1px solid rgba(255,255,255,.24)',
+    pointerEvents:'none'
+  }
+
+  const weightPickerStyle = {
+    position:'absolute', right:4, bottom:28, display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:4,
+    background:'rgba(10,12,24,.85)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.25)',
+    padding:6, borderRadius:8, boxShadow:'0 8px 20px rgba(0,0,0,.35)', zIndex:2
+  }
+  const weightBtnStyle = {
+    minWidth:28, minHeight:28, borderRadius:6, border:'1px solid rgba(255,255,255,.22)', background:'transparent', color:'#EAEAEA', cursor:'pointer', fontWeight:700
+  }
+
+  const handleWeightKeyDown = (e, note) => {
+    // Keyboard nav for the weight picker: arrows move focus, Enter/Space select, Esc closes
+    const container = e.currentTarget
+    const buttons = Array.from(container.querySelectorAll('button[data-wv]'))
+    if (!buttons.length) return
+    const cols = 5
+    let idx = Math.max(0, buttons.findIndex(b => b === document.activeElement))
+    if (idx === -1) {
+      // Focus current value if none focused yet
+      const current = (note.priority ?? 5)
+      const btn = buttons.find(b => Number(b.dataset.wv) === current)
+      if (btn) btn.focus()
+      idx = Math.max(0, buttons.findIndex(b => b === document.activeElement))
+    }
+    const key = e.key
+    const clamp = (x,min,max)=> Math.max(min, Math.min(max, x))
+    let handled = false
+    if (key === 'ArrowRight') { idx = clamp(idx+1, 0, buttons.length-1); buttons[idx].focus(); handled = true }
+    else if (key === 'ArrowLeft') { idx = clamp(idx-1, 0, buttons.length-1); buttons[idx].focus(); handled = true }
+    else if (key === 'ArrowDown') { idx = clamp(idx+cols, 0, buttons.length-1); buttons[idx].focus(); handled = true }
+    else if (key === 'ArrowUp') { idx = clamp(idx-cols, 0, buttons.length-1); buttons[idx].focus(); handled = true }
+    else if (key === 'Enter' || key === ' ') {
+      const el = document.activeElement
+      if (el && el.dataset && el.dataset.wv) {
+        const v = Number(el.dataset.wv)
+        setNotes(arr=> arr.map(x=> x.id===note.id ? { ...x, priority: v } : x))
+        setWeightFor(null)
+        if (lastWeightTrigger && typeof lastWeightTrigger.focus === 'function') {
+          // restore focus to trigger after selecting
+          setTimeout(()=> lastWeightTrigger.focus(), 0)
+        }
+        handled = true
+      }
+    } else if (key === 'Escape') {
+      setWeightFor(null)
+      if (lastWeightTrigger && typeof lastWeightTrigger.focus === 'function') {
+        setTimeout(()=> lastWeightTrigger.focus(), 0)
+      }
+      handled = true
+    }
+    if (handled) { e.preventDefault(); e.stopPropagation() }
+  }
+
   const composerStyle = (c)=>{
     if (!c) return { display:'none' }
     const { left, top } = cellCenterPx(c.col, c.row)
@@ -890,6 +955,8 @@ export default function EisenhowerPanel(){
                         aria-label={`Nota: ${n.text}. Columna ${n.col+1} de ${COLS}, fila ${n.row+1} de ${ROWS}`}
                       >
                         <span style={noteTextStyle}>{n.text}</span>
+                        {/* Weight badge */}
+                        <span aria-label={`Importancia ${n.priority ?? 5} de 10`} style={weightBadgeStyle}>{n.priority ?? 5}</span>
                         <span className="eh-toolbar" style={noteToolbarStyle}>
                           <button
                             type="button"
@@ -904,6 +971,55 @@ export default function EisenhowerPanel(){
                           >
                             ✎
                           </button>
+                          <button
+                            type="button"
+                            aria-label="Asignar importancia"
+                            title="Importancia (1–10)"
+                            onPointerDown={(e)=>{ e.stopPropagation() }}
+                            onClick={(e)=>{ e.stopPropagation(); setLastWeightTrigger(e.currentTarget); setWeightFor(prev => prev===n.id ? null : n.id) }}
+                            style={{
+                              background:'rgba(10,12,24,.7)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.3)',
+                              borderRadius:4, padding:'2px 6px', fontSize:10, cursor:'pointer', userSelect:'none'
+                            }}
+                          >
+                            ⚖️
+                          </button>
+                          {weightFor === n.id && (
+                            <div
+                              role="dialog"
+                              aria-label="Elegir importancia"
+                              style={weightPickerStyle}
+                              tabIndex={-1}
+                              onClick={(e)=> e.stopPropagation()}
+                              onPointerDown={(e)=> e.stopPropagation()}
+                              onKeyDown={(e)=> handleWeightKeyDown(e, n)}
+                              ref={(el)=>{
+                                if (el) {
+                                  // Focus the current value when opening
+                                  const current = (n.priority ?? 5)
+                                  const btn = el.querySelector(`button[data-wv="${current}"]`)
+                                  if (btn) setTimeout(()=> btn.focus(), 0)
+                                }
+                              }}
+                            >
+                              {Array.from({length:10}, (_,i)=> i+1).map(v=> (
+                                <button key={v}
+                                  type="button"
+                                  aria-label={`Fijar ${v}`}
+                                  title={`${v}`}
+                                  data-wv={v}
+                                  style={{...weightBtnStyle, border: v===(n.priority??5) ? '2px solid #F0375D' : weightBtnStyle.border}}
+                                  onClick={()=>{
+                                    setNotes(arr=> arr.map(x=> x.id===n.id ? { ...x, priority: v } : x))
+                                    setWeightFor(null)
+                                    if (lastWeightTrigger && typeof lastWeightTrigger.focus === 'function') {
+                                      setTimeout(()=> lastWeightTrigger.focus(), 0)
+                                    }
+                                  }}
+                                >{v}</button>
+                              ))}
+                            </div>
+                          )}
                         </span>
                       </div>
                     )}
