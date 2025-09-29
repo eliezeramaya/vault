@@ -49,3 +49,25 @@ button { font-family: inherit; }
   transform: translateY(0) scale(0.99);
   box-shadow: 0 6px 16px rgba(0,0,0,.4) inset;
 }
+
+/* Crystal note chips: reuse highlights */
+.eh-note::before, .eh-note::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  transition:inherit;
+}
+.eh-note::before {
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+  mix-blend-mode: screen;
+  opacity:.45;
+}
+.eh-note::after {
+  background: radial-gradient(140px 140px at 20% 0%, rgba(255,255,255,0.28), rgba(255,255,255,0) 60%);
+  opacity:.35;
+}
+.eh-note:hover {
+  border-color: rgba(255,255,255,0.6);
+  box-shadow: 0 12px 28px rgba(0,0,0,.35);
+}

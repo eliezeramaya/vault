@@ -439,11 +439,12 @@ export default function EisenhowerPanel(){
     // No offset for overlapping - each cell should have only one note
     return {
       position:'absolute', left, top, transform:'translate(-50%, -50%)',
-      background:'rgba(255,255,255,.95)', color:'#0a0a15', border:'1px solid rgba(0,0,0,.12)',
-      boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:6, boxShadow:'0 4px 12px rgba(0,0,0,.15)',
+      background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.4)',
+      boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
       fontSize:11, fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', pointerEvents:'auto', userSelect:'text',
       lineHeight:1.3, whiteSpace:'pre-wrap', wordBreak:'break-word', overflowWrap:'anywhere', overflow:'hidden',
       touchAction:'none', cursor:'text',
+      backdropFilter:'url(#distorsion)', WebkitBackdropFilter:'url(#distorsion)'
     }
   }
 
@@ -462,9 +463,10 @@ export default function EisenhowerPanel(){
     const { left, top } = cellCenterPct(c.col, c.row)
     return {
       position:'absolute', left, top, transform:'translate(-50%, -50%)',
-      background:'rgba(255,255,255,1)', color:'#0a0a15', border:'1px solid rgba(0,0,0,.18)',
-      boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:6, boxShadow:'0 4px 12px rgba(0,0,0,.18)',
+      background:'rgba(10,12,24,0.75)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,0.4)',
+      boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
       fontSize:11, fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', pointerEvents:'auto',
+      backdropFilter:'url(#distorsion)', WebkitBackdropFilter:'url(#distorsion)'
     }
   }
 
