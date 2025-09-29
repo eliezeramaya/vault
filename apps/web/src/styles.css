@@ -1,0 +1,24 @@
+/* Global styles and Proggy font fallback */
+/* If you add the Proggy webfont file later, declare it here via @font-face and ensure correct paths. */
+/* @font-face {
+  font-family: 'Proggy';
+  src: url('/vault/fonts/Proggy.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+} */
+
+:root {
+  --bg:#0a0a15;
+  --fg:#EAEAEA;
+}
+
+html, body, #root { height:100%; }
+body {
+  margin:0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+button { font-family: inherit; }

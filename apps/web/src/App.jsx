@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Globe from './components/Globe'
+import EisenhowerPanel from './components/EisenhowerPanel'
 import Welcome from './components/Welcome'
 import Onboarding from './components/Onboarding'
 import Preloader from './components/Preloader'
@@ -14,6 +15,7 @@ export default function App(){
   const [loading, setLoading] = useState(true)
   const globeApiRef = useRef(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [view, setView] = useState('map') // 'map' | 'matrix'
 
   useEffect(()=>{
     return ()=> { if (demoTimer.current) clearInterval(demoTimer.current) }
@@ -54,28 +56,44 @@ export default function App(){
   return (
     <div className="app" style={{position:'relative'}}>
       {showWelcome && (
-        <Welcome onEnter={()=>setShowWelcome(false)} onDemo={startDemo} />
+        <Welcome
+          onEnterMatrix={()=>{ setView('matrix'); setShowWelcome(false) }}
+          onEnterMap={()=>{ setView('map'); setShowWelcome(false) }}
+          onDemo={startDemo}
+        />
       )}
-      <Globe onHelp={()=>setShowOb(true)} onReady={handleGlobeReady} onApi={(api)=> (globeApiRef.current = api)} />
+
+      {/* Toggle between Map (Globe) and Eisenhower Matrix */}
+      {view === 'map' ? (
+        <Globe onHelp={()=>setShowOb(true)} onReady={handleGlobeReady} onApi={(api)=> (globeApiRef.current = api)} />
+      ) : (
+        <EisenhowerPanel />
+      )}
+
       <Onboarding open={showOb} onClose={()=>setShowOb(false)} />
-      <Preloader progress={loadPct} visible={loading} />
+      <Preloader progress={loadPct} visible={loading && view==='map'} />
       {/* FAB */}
-      <button
-        type="button"
-        onClick={()=> setSheetOpen(true)}
-        aria-label="Crear nueva isla"
-        title="Crear nueva isla"
-        style={{
-          position:'absolute', right:'max(16px, env(safe-area-inset-right))', bottom:'max(16px, env(safe-area-inset-bottom))',
-          width:56, height:56, borderRadius:28, cursor:'pointer', zIndex:15,
-          background:'#F0375D', color:'#0a0a15', border:'none', boxShadow:'0 10px 26px rgba(240,55,93,.35)', fontSize:24, fontWeight:900
-        }}
-      >+</button>
-      <AddIslandSheet
-        open={sheetOpen}
-        onClose={()=> setSheetOpen(false)}
-        onCreate={({ title, emoji, zone })=> globeApiRef.current?.addIsland?.({ title, emoji, zone }) }
-      />
+      {view === 'map' && (
+        <>
+          <button
+            type="button"
+            onClick={()=> setSheetOpen(true)}
+            aria-label="Crear nueva isla"
+            title="Crear nueva isla"
+            style={{
+              position:'absolute', right:'max(16px, env(safe-area-inset-right))', bottom:'max(16px, env(safe-area-inset-bottom))',
+              width:56, height:56, borderRadius:28, cursor:'pointer', zIndex:15,
+              background:'#F0375D', color:'#0a0a15', border:'none', boxShadow:'0 10px 26px rgba(240,55,93,.35)', fontSize:24, fontWeight:900
+            }}
+          >+
+          </button>
+          <AddIslandSheet
+            open={sheetOpen}
+            onClose={()=> setSheetOpen(false)}
+            onCreate={({ title, emoji, zone })=> globeApiRef.current?.addIsland?.({ title, emoji, zone }) }
+          />
+        </>
+      )}
       {demoLeft>0 && (
         <div style={{
           position:'absolute',
@@ -85,6 +103,34 @@ export default function App(){
           padding:'8px 12px', borderRadius:8, fontSize:12, backdropFilter:'blur(8px)'
         }}>Demo en progreso · {demoLeft}s  —  Puedes arrastrar nodos y ajustar el heatmap</div>
       )}
+
+      {/* View switcher */}
+      <div style={{position:'absolute', top:'max(12px, env(safe-area-inset-top))', right:'max(12px, env(safe-area-inset-right))', zIndex:25, display:'flex', gap:8}}>
+        <button
+          type="button"
+          onClick={()=> setView('map')}
+          aria-pressed={view==='map'}
+          style={{
+            background: view==='map' ? '#F0375D' : 'rgba(10,12,24,.6)',
+            color: view==='map' ? '#0a0a15' : '#EAEAEA',
+            border:'1px solid rgba(255,255,255,.15)',
+            padding:'10px 14px', minHeight:40, minWidth:44, borderRadius:10,
+            fontWeight:700, cursor:'pointer'
+          }}
+        >Mapa</button>
+        <button
+          type="button"
+          onClick={()=> setView('matrix')}
+          aria-pressed={view==='matrix'}
+          style={{
+            background: view==='matrix' ? '#F0375D' : 'rgba(10,12,24,.6)',
+            color: view==='matrix' ? '#0a0a15' : '#EAEAEA',
+            border:'1px solid rgba(255,255,255,.15)',
+            padding:'10px 14px', minHeight:40, minWidth:44, borderRadius:10,
+            fontWeight:700, cursor:'pointer'
+          }}
+        >Matriz</button>
+      </div>
     </div>
   )
 }
