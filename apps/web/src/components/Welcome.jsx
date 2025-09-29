@@ -1,4 +1,5 @@
 import React from 'react'
+import CrystalButton from './CrystalButton'
 
 export default function Welcome({ onEnterMatrix, onEnterMap, onDemo }){
   const wrap = {
@@ -19,6 +20,7 @@ export default function Welcome({ onEnterMatrix, onEnterMap, onDemo }){
   const title = { fontSize:22, fontWeight:800, letterSpacing:.3 }
   const subtitle = { opacity:.85, lineHeight:1.5, marginTop:6, fontSize:14 }
   const ctas = { display:'flex', gap:12, marginTop:18, flexWrap:'wrap' }
+  const demoRow = { display:'flex', gap:12, marginTop:14, alignItems:'center', flexWrap:'wrap' }
   const primary = {
     background:'#F0375D', color:'#0a0a15', border:'none', padding:'12px 16px', minHeight:44, minWidth:44, borderRadius:10,
     fontWeight:700, cursor:'pointer'
@@ -52,6 +54,10 @@ export default function Welcome({ onEnterMatrix, onEnterMap, onDemo }){
           <button style={primary} onClick={onEnterMatrix} aria-label="Entrar a la Matriz">Entrar a la Matriz</button>
           <button style={secondary} onClick={onEnterMap} aria-label="Entrar al Mapa">Entrar al Mapa</button>
           <button style={secondary} onClick={onDemo} aria-label="Ver una demo rápida">Demo rápida 30s</button>
+        </div>
+        <div style={demoRow}>
+          <div style={{opacity:.7, fontSize:12}}>Idea visual:</div>
+          <CrystalButton aria-label="Botón cristal demo">CRYSTAL</CrystalButton>
         </div>
       </div>
     </div>

@@ -22,3 +22,30 @@ body {
 }
 
 button { font-family: inherit; }
+
+/* Crystal Button enhancements */
+.crystal-btn::before, .crystal-btn::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  transition:inherit;
+}
+.crystal-btn::before {
+  background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06));
+  mix-blend-mode: screen;
+  opacity: .5;
+}
+.crystal-btn::after {
+  background: radial-gradient(120px 120px at 20% 0%, rgba(255,255,255,0.35), rgba(255,255,255,0) 60%);
+  opacity:.45;
+}
+.crystal-btn:hover {
+  border-color: rgba(255,255,255,0.6);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(0,0,0,.35);
+}
+.crystal-btn:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: 0 6px 16px rgba(0,0,0,.4) inset;
+}

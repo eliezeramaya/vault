@@ -55,6 +55,13 @@ export default function App(){
 
   return (
     <div className="app" style={{position:'relative'}}>
+      {/* Global SVG filters for visual effects (e.g., crystal-btn distortion) */}
+      <svg width="0" height="0" style={{position:'absolute'}} aria-hidden focusable="false">
+        <filter id="distorsion">
+          <feTurbulence type="turbulence" baseFrequency="0.012" numOctaves="3" seed="7" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+      </svg>
       {showWelcome && (
         <Welcome
           onEnterMatrix={()=>{ setView('matrix'); setShowWelcome(false) }}
