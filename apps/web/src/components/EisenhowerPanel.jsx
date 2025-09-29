@@ -20,6 +20,7 @@ export default function EisenhowerPanel(){
   const [dragId, setDragId] = useState(null)
   const [composer, setComposer] = useState(null) // {id?, col, row, text}
   const [quickInput, setQuickInput] = useState('') // Bottom panel input
+  const [pingIds, setPingIds] = useState(new Set())
   const gridRef = useRef(null)
   const stageWrapRef = useRef(null)
   const pointersRef = useRef(new Map()) // pointerId -> {x,y}
@@ -38,6 +39,23 @@ export default function EisenhowerPanel(){
   useEffect(()=>{
     try{ localStorage.setItem(LS_KEY, JSON.stringify(notes)) }catch{}
   },[notes])
+
+  // Helper to trigger a brief visual ping on a note
+  const triggerPing = (id)=>{
+    setPingIds((prev)=>{
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+    setTimeout(()=>{
+      setPingIds((prev)=>{
+        if (!prev.has(id)) return prev
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }, 520)
+  }
 
   const clamp = (v,min,max)=> Math.max(min, Math.min(max, v))
   const clientToCell = (clientX, clientY)=>{
@@ -224,6 +242,8 @@ export default function EisenhowerPanel(){
         if (occupied){
           const p = nearestFreeInQuadrant(col, row, dragId)
           if (!p) return arr
+          // Trigger ping visual on the moved note
+          setTimeout(()=> triggerPing(dragId), 0)
           return arr.map(n=> n.id===dragId ? { ...n, col: p.col, row: p.row } : n)
         }
         return arr.map(n=> n.id===dragId ? { ...n, col, row } : n)
@@ -566,6 +586,12 @@ export default function EisenhowerPanel(){
           linear-gradient(to bottom, transparent calc(50% - .5px), ${major} calc(50% - .5px), ${major} calc(50% + .5px), transparent calc(50% + .5px));
           opacity:.8;
         }
+
+        /* Ping visual when a note is re-routed */
+        @keyframes eh-ping-ring { from { transform: translate(-50%, -50%) scale(0.8); opacity: .6; } to { transform: translate(-50%, -50%) scale(1.35); opacity: 0; } }
+        @keyframes eh-ping-glow { from { box-shadow: 0 0 0 rgba(240,55,93,.6); } 50% { box-shadow: 0 0 18px rgba(240,55,93,.55); } to { box-shadow: 0 0 0 rgba(240,55,93,0); } }
+        .eh-note.ping::after { content:''; position:absolute; left:50%; top:50%; width:240px; height:240px; border-radius:12px; border:2px solid rgba(240,55,93,.75); transform: translate(-50%, -50%); animation: eh-ping-ring 480ms ease-out forwards; pointer-events:none; }
+        .eh-note.ping { animation: eh-ping-glow 480ms ease-out; }
       `}</style>
 
       <div style={panel} aria-label="Panel liquid glass">
@@ -599,7 +625,7 @@ export default function EisenhowerPanel(){
                   <React.Fragment key={n.id}>
                     {!isEditing && (
                       <div
-                        className="eh-note"
+                        className={`eh-note${pingIds.has(n.id) ? ' ping' : ''}`}
                         style={noteStyle(n)}
                         title={n.text}
                         onPointerDown={(e)=>{
@@ -629,6 +655,7 @@ export default function EisenhowerPanel(){
                             if (occupied){
                               const p = nearestFreeInQuadrant(nextCol, nextRow, n.id)
                               if (!p) return arr
+                              setTimeout(()=> triggerPing(n.id), 0)
                               return arr.map(x=> x.id===n.id ? { ...x, col: p.col, row: p.row } : x)
                             }
                             return arr.map(x=> x.id===n.id ? { ...x, col: nextCol, row: nextRow } : x)
