@@ -936,8 +936,8 @@ export default function EisenhowerPanel(){
                           }}
                         />
                         <div style={{position:'absolute', right:6, bottom:6, display:'flex', gap:6}}>
-                          <button type="submit" style={{ background:'#F0375D', color:'#0a0a15', border:'none', padding:'4px 8px', borderRadius:6, fontWeight:700 }}>Guardar</button>
-                          <button type="button" onClick={cancelComposer} style={{ background:'transparent', color:'#0a0a15', border:'1px solid rgba(0,0,0,.2)', padding:'4px 8px', borderRadius:6 }}>Cancelar</button>
+                          <button type="submit" aria-label="Guardar" title="Guardar" style={{ background:'#F0375D', color:'#0a0a15', border:'none', padding:'4px 8px', borderRadius:6, fontWeight:700 }}>💾</button>
+                          <button type="button" onClick={cancelComposer} aria-label="Cancelar" title="Cancelar" style={{ background:'transparent', color:'#0a0a15', border:'1px solid rgba(0,0,0,.2)', padding:'4px 8px', borderRadius:6 }}>✕</button>
                         </div>
                         <div style={{position:'absolute', left:8, bottom:8, fontSize:10, opacity:.6}}>{(composer.text||'').length}/{MAX_TEXT}</div>
                       </form>

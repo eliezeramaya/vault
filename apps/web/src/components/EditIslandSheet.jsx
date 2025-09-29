@@ -66,8 +66,8 @@ export default function EditIslandSheet({ open, node, onClose, onSave, onConnect
             <button type="button" style={btn(false)} onClick={onFocus}>Foco</button>
           </div>
           <div style={{display:'flex', gap:12}}>
-            <button type="button" style={btn(false)} onClick={onClose}>Cancelar</button>
-            <button type="button" style={btn(true)} onClick={()=> onSave?.({ title, zone: zone || undefined, priority })}>Guardar</button>
+            <button type="button" style={btn(false)} onClick={onClose} aria-label="Cancelar" title="Cancelar">✕</button>
+            <button type="button" style={btn(true)} onClick={()=> onSave?.({ title, zone: zone || undefined, priority })} aria-label="Guardar" title="Guardar">💾</button>
           </div>
         </div>
       </div>
