@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import CrystalButton from './CrystalButton'
 
-export default function Welcome({ onEnterMatrix, onEnterMap, onDemo }){
+export default function Welcome({ onEnterMatrix, onEnterMap, onDemo, onClose }){
   const wrap = {
     position:'absolute', inset:0, display:'grid', placeItems:'center',
     background:'var(--bg-wrap)',
@@ -22,7 +22,7 @@ export default function Welcome({ onEnterMatrix, onEnterMap, onDemo }){
   const ctas = { display:'flex', gap:12, marginTop:18, flexWrap:'wrap' }
   const demoRow = { display:'flex', gap:12, marginTop:14, alignItems:'center', flexWrap:'wrap' }
   const primary = {
-    background:'#F0375D', color:'#0a0a15', border:'none', padding:'12px 16px', minHeight:44, minWidth:44, borderRadius:10,
+    background:'var(--primary)', color:'var(--on-primary)', border:'none', padding:'12px 16px', minHeight:44, minWidth:44, borderRadius:10,
     fontWeight:700, cursor:'pointer'
   }
   const secondary = {
@@ -31,9 +31,39 @@ export default function Welcome({ onEnterMatrix, onEnterMap, onDemo }){
   }
   const kbd = { padding:'2px 6px', borderRadius:6, border:'1px solid #2a3355', background:'#0a0f1f', fontSize:12 }
 
+  const dialogRef = useRef(null)
+  const lastFocusRef = useRef(null)
+  useEffect(()=>{
+    // Save previously focused element to restore on close
+    lastFocusRef.current = document.activeElement
+    const onKey = (e)=>{
+      if (e.key === 'Escape' && onClose){ e.preventDefault(); onClose() }
+      if (e.key === 'Tab'){
+        const root = dialogRef.current
+        if (!root) return
+        const focusables = root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        if (!focusables.length) return
+        const first = focusables[0]
+        const last = focusables[focusables.length-1]
+        if (e.shiftKey){
+          if (document.activeElement === first){ e.preventDefault(); last.focus() }
+        } else {
+          if (document.activeElement === last){ e.preventDefault(); first.focus() }
+        }
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return ()=>{
+      document.removeEventListener('keydown', onKey)
+      // Restore focus to the previously focused trigger if present
+      const el = lastFocusRef.current
+      if (el && typeof el.focus === 'function') setTimeout(()=> el.focus(), 0)
+    }
+  }, [onClose])
+
   return (
     <div style={wrap} role="dialog" aria-modal="true" aria-labelledby="wTitle" aria-describedby="wDesc">
-      <div style={card}>
+      <div style={card} ref={dialogRef}>
         <div style={logo}>
           <div style={mark} aria-hidden="true"><span style={{fontWeight:900}}>IS</span></div>
           <div>
@@ -54,6 +84,9 @@ export default function Welcome({ onEnterMatrix, onEnterMap, onDemo }){
           <button type="button" style={primary} onClick={onEnterMatrix} aria-label="Entrar a la Matriz" autoFocus>Entrar a la Matriz</button>
           <button type="button" style={secondary} onClick={onEnterMap} aria-label="Entrar al Mapa">Entrar al Mapa</button>
           <button type="button" style={secondary} onClick={onDemo} aria-label="Ver una demo rápida">Demo rápida 30s</button>
+          {onClose && (
+            <button type="button" style={secondary} onClick={onClose} aria-label="Cerrar diálogo">Cerrar</button>
+          )}
         </div>
         <div style={demoRow}>
           <div style={{opacity:.7, fontSize:12}}>Idea visual:</div>

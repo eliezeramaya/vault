@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Pencil, Scale, Save, X, RefreshCcw, ZoomIn, ZoomOut, Home } from 'lucide-react'
+import { Pencil, Scale, Save, X, RefreshCcw, ZoomIn, ZoomOut, Home, Search } from 'lucide-react'
 
 // Eisenhower Matrix with liquid-glass panel and a 72×72 = 5184 cell grid
 export default function EisenhowerPanel(){
@@ -27,6 +27,7 @@ export default function EisenhowerPanel(){
   const [pingIds, setPingIds] = useState(new Set())
   const [weightFor, setWeightFor] = useState(null) // note id or null
   const [lastWeightTrigger, setLastWeightTrigger] = useState(null) // HTMLElement to restore focus
+  const weightPickerRef = useRef(null)
   const gridRef = useRef(null)
   const stageWrapRef = useRef(null)
   const panRef = useRef({ x: 0, y: 0 })
@@ -34,6 +35,18 @@ export default function EisenhowerPanel(){
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const pointersRef = useRef(new Map()) // pointerId -> {x,y}
   const pinchRef = useRef(null) // { startDist, startZoom }
+  const [selectedId, setSelectedId] = useState(null)
+  const [showCheats, setShowCheats] = useState(false)
+  const [srMsg, setSrMsg] = useState('')
+  const notesRef = useRef(notes)
+  useEffect(()=>{ notesRef.current = notes }, [notes])
+
+  // Filters state and persistence
+  const LS_FILT = 'eh_filters_v1'
+  const [searchText, setSearchText] = useState('')
+  const [prioMin, setPrioMin] = useState(1)
+  const [prioMax, setPrioMax] = useState(10)
+  const [quad, setQuad] = useState({ TL:true, TR:true, BL:true, BR:true })
 
   useEffect(()=>{
     try{
@@ -48,9 +61,75 @@ export default function EisenhowerPanel(){
     }catch{}
   },[])
 
+  // Load filters
+  useEffect(()=>{
+    try{
+      const raw = localStorage.getItem(LS_FILT)
+      if (raw){
+        const f = JSON.parse(raw)
+        if (f && typeof f === 'object'){
+          if (typeof f.search === 'string') setSearchText(f.search)
+          if (Array.isArray(f.prio) && f.prio.length===2){
+            const a = Math.max(1, Math.min(10, +f.prio[0] || 1))
+            const b = Math.max(1, Math.min(10, +f.prio[1] || 10))
+            setPrioMin(Math.min(a,b))
+            setPrioMax(Math.max(a,b))
+          }
+          if (f.quad && typeof f.quad==='object'){
+            setQuad(q=> ({ ...q,
+              TL: !!f.quad.TL, TR: !!f.quad.TR, BL: !!f.quad.BL, BR: !!f.quad.BR
+            }))
+          }
+        }
+      }
+    }catch{}
+  },[])
+
   useEffect(()=>{
     try{ localStorage.setItem(LS_KEY, JSON.stringify(notes)) }catch{}
   },[notes])
+
+  // Persist filters
+  useEffect(()=>{
+    const data = { search: searchText, prio:[prioMin, prioMax], quad }
+    try{ localStorage.setItem(LS_FILT, JSON.stringify(data)) }catch{}
+  }, [searchText, prioMin, prioMax, quad])
+
+  const matchesFilters = (n)=>{
+    // quadrant
+    const q = getQuadrant(n.col, n.row)
+    if (!quad[q]) return false
+    // priority
+    const p = typeof n.priority === 'number' ? n.priority : 5
+    if (p < prioMin || p > prioMax) return false
+    // text search
+    const s = searchText.trim().toLowerCase()
+    if (!s) return true
+    return (n.text||'').toLowerCase().includes(s)
+  }
+
+  const renderTextWithHighlight = (text)=>{
+    const t = String(text||'')
+    const query = searchText.trim()
+    if (!query) return t
+    const lower = t.toLowerCase()
+    const ql = query.toLowerCase()
+    const parts = []
+    let i = 0
+    while (i < t.length){
+      const idx = lower.indexOf(ql, i)
+      if (idx === -1){
+        parts.push(t.slice(i))
+        break
+      }
+      if (idx > i) parts.push(t.slice(i, idx))
+      parts.push(
+        <mark key={idx} style={{ background:'rgba(240,55,93,.35)', color:'inherit', padding:'0 2px', borderRadius:4 }}>{t.slice(idx, idx+ql.length)}</mark>
+      )
+      i = idx + ql.length
+    }
+    return parts
+  }
 
   // Helper to trigger a brief visual ping on a note
   const triggerPing = (id)=>{
@@ -107,6 +186,7 @@ export default function EisenhowerPanel(){
       }
     }
     setNotes((arr)=> [...arr, { id, col: target.col, row: target.row, text: t, priority: 5 }])
+    return id
   }
 
   const getQuadrant = (col,row)=>{
@@ -361,7 +441,22 @@ export default function EisenhowerPanel(){
     const near = nearestNonCollidingInQuadrant(center.col, center.row)
     const slot = near || nextSlotForQuadrant(minQuad)
     addNote(slot.col, slot.row, t)
+    setSrMsg(`Nota creada en columna ${slot.col+1}, fila ${slot.row+1}`)
     setQuickInput('')
+  }
+
+  // Create empty note in least-populated quadrant and open composer
+  const createQuickNote = ()=>{
+    if (composer) return
+    const counts = { TL:0, TR:0, BL:0, BR:0 }
+    for (const n of notes){ counts[getQuadrant(n.col,n.row)]++ }
+    const minQuad = Object.keys(counts).reduce((a,b)=> counts[a] <= counts[b] ? a : b)
+    const center = quadrantCenter(minQuad)
+    const near = nearestNonCollidingInQuadrant(center.col, center.row)
+    const slot = near || nextSlotForQuadrant(minQuad)
+    const newId = addNote(slot.col, slot.row, '')
+    setComposer({ id:newId, col: slot.col, row: slot.row, text: '' })
+    setSelectedId(newId)
   }
 
   // Drag handling
@@ -382,7 +477,13 @@ export default function EisenhowerPanel(){
         return arr.map(n=> n.id===dragId ? { ...n, col, row } : n)
       })
     }
-    const up = ()=> setDragId(null)
+    const up = ()=>{
+      if (dragId){
+        const n = notesRef.current.find(x=> x.id===dragId)
+        if (n) setSrMsg(`Nota movida a columna ${n.col+1}, fila ${n.row+1}`)
+      }
+      setDragId(null)
+    }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
     window.addEventListener('touchmove', move, { passive:false })
@@ -417,7 +518,87 @@ export default function EisenhowerPanel(){
     const newId = Math.random().toString(36).slice(2,9)
     addNote(target.col, target.row, '', newId)
     setComposer({ id:newId, col: target.col, row: target.row, text: '' })
+    setSelectedId(newId)
+    setSrMsg(`Nota creada en columna ${target.col+1}, fila ${target.row+1}`)
   }
+
+  // Keyboard shortcuts
+  const isTypingContext = (el)=>{
+    if (!el) return false
+    const tag = (el.tagName||'').toLowerCase()
+    const editable = el.isContentEditable
+    return editable || tag==='input' || tag==='textarea' || tag==='select'
+  }
+  useEffect(()=>{
+    const onKey = (e)=>{
+      const el = document.activeElement
+      // Don't handle when typing in inputs/textarea or when weight picker/composer are open
+      if (isTypingContext(el)) return
+      if (composer) return
+      // Shortcut map
+      const key = e.key
+      // Help / Cheat-sheet
+      if (key==='h' || key==='H' || key==='?'){
+        setShowCheats(v=> !v)
+        e.preventDefault(); return
+      }
+      // Create note
+      if (key==='n' || key==='N'){
+        createQuickNote(); e.preventDefault(); return
+      }
+      // Zoom
+      if (key==='=' || key==='+'){
+        setZoom(z=> Math.min(ZMAX, +(z + ZSTEP).toFixed(2)))
+        e.preventDefault(); return
+      }
+      if (key==='-'){
+        setZoom(z=> Math.max(ZMIN, +(z - ZSTEP).toFixed(2)))
+        e.preventDefault(); return
+      }
+      if (key==='0'){
+        zoomToFit(); e.preventDefault(); return
+      }
+      // Edit/Delete require a selected note (focused or tracked)
+      const activeNoteEl = el && el.classList && el.classList.contains('eh-note') ? el : null
+      const currentId = activeNoteEl ? activeNoteEl.getAttribute('data-id') : selectedId
+      if (!currentId) return
+      if (key==='e' || key==='E'){
+        const n = notes.find(x=> x.id===currentId)
+        if (n){ setComposer({ id:n.id, col:n.col, row:n.row, text:n.text }) }
+        e.preventDefault(); return
+      }
+      if (key==='Delete' || key==='Backspace'){
+        setNotes(arr=> arr.filter(x=> x.id!==currentId))
+        setSelectedId(null)
+        e.preventDefault(); return
+      }
+      // Arrow move when note is selected and focus not in input
+      let dcol = 0, drow = 0
+      if (key==='ArrowLeft') dcol=-1
+      else if (key==='ArrowRight') dcol=1
+      else if (key==='ArrowUp') drow=-1
+      else if (key==='ArrowDown') drow=1
+      if (dcol!==0 || drow!==0){
+        e.preventDefault()
+        setNotes(arr=>{
+          const n = arr.find(x=> x.id===currentId)
+          if (!n) return arr
+          const nextCol = clamp(n.col + dcol,0,COLS-1)
+          const nextRow = clamp(n.row + drow,0,ROWS-1)
+          const wouldCollide = collidesAt(nextCol, nextRow, n.id)
+          if (wouldCollide){
+            const p = nearestNonCollidingInQuadrantIn(arr, nextCol, nextRow, n.id)
+            if (!p) return arr
+            setTimeout(()=> triggerPing(n.id), 0)
+            return arr.map(x=> x.id===n.id ? { ...x, col: p.col, row: p.row } : x)
+          }
+          return arr.map(x=> x.id===n.id ? { ...x, col: nextCol, row: nextRow } : x)
+        })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return ()=> window.removeEventListener('keydown', onKey)
+  }, [composer, selectedId, notes, ZMAX, ZMIN, ZSTEP])
 
   // Wheel/pinch zoom handlers
   // Normalize wheel delta across browsers/devices (pixels)
@@ -563,7 +744,7 @@ export default function EisenhowerPanel(){
     background:'linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01))'
   }
 
-  const notesLayer = { position:'absolute', inset:0, pointerEvents:'none' }
+  const notesLayer = { position:'absolute', inset:0, pointerEvents:'auto' }
 
   // Dynamic axis gradients (from center to edges), intensity adjusts with notes distribution
   const counts = useMemo(()=>{
@@ -700,8 +881,10 @@ export default function EisenhowerPanel(){
     // No offset for overlapping - each cell should have only one note
     return {
       position:'absolute', left, top, transform:'translate(-50%, -50%)',
-      background:'var(--note-bg)', color:'var(--text)', border:'1px solid var(--note-border)',
-  boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
+      background:'var(--note-bg)', color:'var(--text)',
+      // No border to allow perfectly touching chips with no visible separation
+      // border:'1px solid var(--note-border)',
+      boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
       fontSize:11, fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', pointerEvents:'auto', userSelect:'text',
       lineHeight:1.3, whiteSpace:'pre-wrap', wordBreak:'break-word', overflowWrap:'anywhere', overflow:'hidden',
       touchAction:'none', cursor:'text',
@@ -724,7 +907,7 @@ export default function EisenhowerPanel(){
     padding:'2px 6px', borderRadius:6, fontSize:10,
     background:'rgba(10,12,24,.65)', color:'#EAEAEA',
     border:'1px solid rgba(255,255,255,.24)',
-    pointerEvents:'none'
+    cursor:'default'
   }
 
   const weightPickerStyle = {
@@ -735,6 +918,23 @@ export default function EisenhowerPanel(){
   const weightBtnStyle = {
     minWidth:28, minHeight:28, borderRadius:6, border:'1px solid rgba(255,255,255,.22)', background:'transparent', color:'#EAEAEA', cursor:'pointer', fontWeight:700
   }
+
+  // Close weight picker on click/touch outside
+  useEffect(()=>{
+    if (!weightFor) return
+    const onDown = (e)=>{
+      const picker = weightPickerRef.current
+      if (picker && picker.contains(e.target)) return
+      if (lastWeightTrigger && lastWeightTrigger.contains && lastWeightTrigger.contains(e.target)) return
+      setWeightFor(null)
+    }
+    document.addEventListener('mousedown', onDown, true)
+    document.addEventListener('touchstart', onDown, { passive:true, capture:true })
+    return ()=>{
+      document.removeEventListener('mousedown', onDown, true)
+      document.removeEventListener('touchstart', onDown, { capture:true })
+    }
+  }, [weightFor, lastWeightTrigger])
 
   const handleWeightKeyDown = (e, note) => {
     // Keyboard nav for the weight picker: arrows move focus, Enter/Space select, Esc closes
@@ -784,8 +984,10 @@ export default function EisenhowerPanel(){
     const { left, top } = cellCenterPx(c.col, c.row)
     return {
       position:'absolute', left, top, transform:'translate(-50%, -50%)',
-      background:'var(--composer-bg)', color:'var(--composer-text)', border:'1px solid var(--note-border)',
-  boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
+      background:'var(--composer-bg)', color:'var(--composer-text)',
+      // Match note visuals: remove border so no separation appears while editing
+      // border:'1px solid var(--note-border)',
+      boxSizing:'border-box', width:120, height:120, padding:8, borderRadius:10, boxShadow:'0 6px 20px rgba(0,0,0,.28)',
       fontSize:11, fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', pointerEvents:'auto',
       backdropFilter:'url(#distorsion)', WebkitBackdropFilter:'url(#distorsion)'
     }
@@ -911,11 +1113,14 @@ export default function EisenhowerPanel(){
             <div style={{...notesLayer, width: '100%', height: '100%'}} aria-live="polite">
               {notes.map(n=> {
                 const isEditing = composer && composer.id === n.id
+                const visible = matchesFilters(n) || isEditing
+                if (!visible) return null
                 return (
                   <React.Fragment key={n.id}>
                     {!isEditing && (
                       <div
                         className={`eh-note${pingIds.has(n.id) ? ' ping' : ''}`}
+                        data-id={n.id}
                         style={noteStyle(n)}
                         title={n.text}
                         onPointerDown={(e)=>{
@@ -926,6 +1131,8 @@ export default function EisenhowerPanel(){
                           e.currentTarget.setPointerCapture?.(e.pointerId)
                           setDragId(n.id)
                         }}
+                        onClick={()=> setSelectedId(n.id)}
+                        onFocus={()=> setSelectedId(n.id)}
                         onKeyDown={(e)=>{
                           if (composer) return
                           let dcol = 0, drow = 0
@@ -935,6 +1142,7 @@ export default function EisenhowerPanel(){
                           else if (e.key==='ArrowDown') drow=1
                           else if (e.key==='Delete' || e.key==='Backspace'){
                             setNotes(arr=> arr.filter(x=> x.id!==n.id))
+                            setSrMsg('Nota eliminada')
                             return
                           } else return
                           e.preventDefault()
@@ -946,18 +1154,21 @@ export default function EisenhowerPanel(){
                               const p = nearestNonCollidingInQuadrantIn(arr, nextCol, nextRow, n.id)
                               if (!p) return arr
                               setTimeout(()=> triggerPing(n.id), 0)
+                              setTimeout(()=> setSrMsg(`Nota movida a columna ${p.col+1}, fila ${p.row+1}`), 0)
                               return arr.map(x=> x.id===n.id ? { ...x, col: p.col, row: p.row } : x)
                             }
+                            setTimeout(()=> setSrMsg(`Nota movida a columna ${nextCol+1}, fila ${nextRow+1}`), 0)
                             return arr.map(x=> x.id===n.id ? { ...x, col: nextCol, row: nextRow } : x)
                           })
                         }}
                         role="button"
                         tabIndex={0}
                         aria-label={`Nota: ${n.text}. Columna ${n.col+1} de ${COLS}, fila ${n.row+1} de ${ROWS}`}
+                        aria-selected={selectedId===n.id}
                       >
-                        <span style={noteTextStyle}>{n.text}</span>
+                        <span style={noteTextStyle}>{renderTextWithHighlight(n.text)}</span>
                         {/* Weight badge */}
-                        <span aria-label={`Importancia ${n.priority ?? 5} de 10`} style={weightBadgeStyle}>{n.priority ?? 5}</span>
+                        <span aria-label={`Importancia ${n.priority ?? 5} de 10`} title={`Importancia ${n.priority ?? 5}/10`} style={weightBadgeStyle}>{n.priority ?? 5}</span>
                         <span className="eh-toolbar" style={noteToolbarStyle}>
                           <button
                             type="button"
@@ -996,6 +1207,7 @@ export default function EisenhowerPanel(){
                               onKeyDown={(e)=> handleWeightKeyDown(e, n)}
                               ref={(el)=>{
                                 if (el) {
+                                  weightPickerRef.current = el
                                   // Focus the current value when opening
                                   const current = (n.priority ?? 5)
                                   const btn = el.querySelector(`button[data-wv="${current}"]`)
@@ -1009,13 +1221,14 @@ export default function EisenhowerPanel(){
                                   aria-label={`Fijar ${v}`}
                                   title={`${v}`}
                                   data-wv={v}
-                                  style={{...weightBtnStyle, border: v===(n.priority??5) ? '2px solid #F0375D' : weightBtnStyle.border}}
+                                  style={{...weightBtnStyle, border: v===(n.priority??5) ? '2px solid var(--primary)' : weightBtnStyle.border}}
                                   onClick={()=>{
                                     setNotes(arr=> arr.map(x=> x.id===n.id ? { ...x, priority: v } : x))
                                     setWeightFor(null)
                                     if (lastWeightTrigger && typeof lastWeightTrigger.focus === 'function') {
                                       setTimeout(()=> lastWeightTrigger.focus(), 0)
                                     }
+                                    setSrMsg(`Importancia cambiada a ${v}`)
                                   }}
                                 >{v}</button>
                               ))}
@@ -1048,15 +1261,15 @@ export default function EisenhowerPanel(){
                           style={{
                             width:'100%', height:'calc(100% - 28px)', resize:'none',
                             padding:'6px 8px', borderRadius:6, border:'1px solid rgba(0,0,0,.15)',
-                            background:'rgba(255,255,255,.9)', color:'#0a0a15', outline:'none',
+                            background:'rgba(255,255,255,.9)', color:'var(--on-primary)', outline:'none',
                             fontSize:11, lineHeight:1.3, fontFamily:'inherit', boxSizing:'border-box'
                           }}
                         />
                         <div style={{position:'absolute', right:6, bottom:6, display:'flex', gap:6}}>
-                          <button type="submit" aria-label="Guardar" title="Guardar" style={{ background:'#F0375D', color:'#0a0a15', border:'none', padding:'4px 8px', borderRadius:6, fontWeight:700 }}>
+                          <button type="submit" aria-label="Guardar" title="Guardar" style={{ background:'var(--primary)', color:'var(--on-primary)', border:'none', padding:'4px 8px', borderRadius:6, fontWeight:700 }}>
                             <Save size={16} aria-hidden="true" />
                           </button>
-                          <button type="button" onClick={cancelComposer} aria-label="Cancelar" title="Cancelar" style={{ background:'transparent', color:'#0a0a15', border:'1px solid rgba(0,0,0,.2)', padding:'4px 8px', borderRadius:6 }}>
+                          <button type="button" onClick={cancelComposer} aria-label="Cancelar" title="Cancelar" style={{ background:'transparent', color:'var(--text)', border:'1px solid rgba(0,0,0,.2)', padding:'4px 8px', borderRadius:6 }}>
                             <X size={16} aria-hidden="true" />
                           </button>
                         </div>
@@ -1072,29 +1285,68 @@ export default function EisenhowerPanel(){
           </div>
         </div>
 
-        {/* Zoom controls and capacity */}
-        <div style={{position:'absolute', top:8, right:8, display:'flex', gap:8, alignItems:'center', zIndex:5}}>
-          <span aria-live="polite" style={{fontSize:11, opacity:.8}}>Notas: {notes.length} / ~{capacity}</span>
-          <button aria-label="Reordenar denso" title="Reordenar denso" onClick={repackDense}
-            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
-            <RefreshCcw size={18} aria-hidden="true" />
-          </button>
-          <button aria-label="Zoom out" title="Zoom -" onClick={()=> setZoom(z=> Math.max(ZMIN, +(z - ZSTEP).toFixed(2)))}
-            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
-            <ZoomOut size={18} aria-hidden="true" />
-          </button>
-          <button aria-label="Reset zoom" title="Reset" onClick={()=> setZoom(1)}
-            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:56, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
-            {Math.round(zoom*100)}%
-          </button>
-          <button aria-label="Zoom to fit content" title="Ajustar al contenido" onClick={zoomToFit}
-            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
-            <Home size={18} aria-hidden="true" />
-          </button>
-          <button aria-label="Zoom in" title="Zoom +" onClick={()=> setZoom(z=> Math.min(ZMAX, +(z + ZSTEP).toFixed(2)))}
-            style={{background:'#F0375D', color:'#0a0a15', border:'none', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:900, cursor:'pointer'}}>
-            <ZoomIn size={18} aria-hidden="true" />
-          </button>
+        {/* Filters + Zoom controls */}
+        <div style={{position:'absolute', top:8, right:8, display:'flex', gap:12, alignItems:'stretch', zIndex:6}}>
+          {/* Filter bar */}
+          <form aria-label="Filtros" onSubmit={(e)=> e.preventDefault()} style={{display:'flex', gap:8, alignItems:'center', background:'rgba(10,12,24,.6)', border:'1px solid rgba(255,255,255,.15)', padding:'8px', borderRadius:12, backdropFilter:'blur(8px)'}}>
+            <div style={{position:'relative'}}>
+              <Search size={16} aria-hidden="true" style={{position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', opacity:.8}} />
+              <input
+                value={searchText}
+                onChange={(e)=> setSearchText(e.target.value.slice(0, 64))}
+                placeholder="Buscar texto..."
+                aria-label="Buscar por texto"
+                style={{padding:'8px 10px 8px 28px', borderRadius:8, border:'1px solid rgba(255,255,255,.18)', background:'rgba(10,12,24,.6)', color:'#EAEAEA', minWidth:160}}
+              />
+            </div>
+            <label style={{display:'flex', alignItems:'center', gap:6, color:'#EAEAEA', fontSize:12}}>
+              Prioridad
+              <input type="number" min={1} max={10} value={prioMin} onChange={(e)=> setPrioMin(Math.max(1, Math.min(10, Number(e.target.value)||1)))} aria-label="Prioridad mínima" style={{width:52, padding:'6px 8px', borderRadius:8, border:'1px solid rgba(255,255,255,.18)', background:'rgba(10,12,24,.6)', color:'#EAEAEA'}} />
+              –
+              <input type="number" min={1} max={10} value={prioMax} onChange={(e)=> setPrioMax(Math.max(1, Math.min(10, Number(e.target.value)||10)))} aria-label="Prioridad máxima" style={{width:52, padding:'6px 8px', borderRadius:8, border:'1px solid rgba(255,255,255,.18)', background:'rgba(10,12,24,.6)', color:'#EAEAEA'}} />
+            </label>
+            <fieldset style={{display:'flex', gap:6, border:'none', margin:0, padding:0}} aria-label="Cuadrantes">
+              {['TL','TR','BL','BR'].map(q => (
+                <label key={q} style={{display:'flex', alignItems:'center', gap:4, background: quad[q] ? 'rgba(240,55,93,.35)' : 'transparent', border:'1px solid rgba(255,255,255,.18)', padding:'6px 8px', borderRadius:8, color:'#EAEAEA', cursor:'pointer'}}>
+                  <input type="checkbox" checked={!!quad[q]} onChange={(e)=> setQuad(prev=> ({ ...prev, [q]: e.target.checked }))} />
+                  {q}
+                </label>
+              ))}
+            </fieldset>
+            <button type="button" onClick={()=>{ setSearchText(''); setPrioMin(1); setPrioMax(10); setQuad({TL:true,TR:true,BL:true,BR:true}) }}
+              aria-label="Limpiar filtros" title="Limpiar filtros"
+              style={{background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.18)', padding:'6px 10px', borderRadius:8, cursor:'pointer'}}>Limpiar</button>
+          </form>
+
+          {/* Zoom controls and capacity */}
+          <div style={{display:'flex', gap:8, alignItems:'center'}}>
+            <span aria-live="polite" style={{fontSize:11, opacity:.8}}>Notas: {notes.length} / ~{capacity}</span>
+            <button aria-label="Reordenar denso" title="Reordenar denso" onClick={repackDense}
+              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              <RefreshCcw size={18} aria-hidden="true" />
+            </button>
+            <button aria-label="Zoom out" title="Zoom -" onClick={()=> setZoom(z=> Math.max(ZMIN, +(z - ZSTEP).toFixed(2)))}
+              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              <ZoomOut size={18} aria-hidden="true" />
+            </button>
+            <button aria-label="Reset zoom" title="Reset" onClick={()=> setZoom(1)}
+              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:56, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              {Math.round(zoom*100)}%
+            </button>
+            <button aria-label="Zoom to fit content" title="Ajustar al contenido" onClick={zoomToFit}
+              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              <Home size={18} aria-hidden="true" />
+            </button>
+            <button aria-label="Zoom in" title="Zoom +" onClick={()=> setZoom(z=> Math.min(ZMAX, +(z + ZSTEP).toFixed(2)))}
+              style={{background:'var(--primary)', color:'var(--on-primary)', border:'none', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:900, cursor:'pointer'}}>
+              <ZoomIn size={18} aria-hidden="true" />
+            </button>
+            {/* Help / Cheat-sheet toggle */}
+            <button aria-label="Atajos de teclado (H)" title="Atajos (H)" onClick={()=> setShowCheats(v=> !v)}
+              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:36, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              ?
+            </button>
+          </div>
         </div>
 
         {/* Quick input panel - bottom center */}
@@ -1114,9 +1366,10 @@ export default function EisenhowerPanel(){
             />
             <button type="submit" disabled={!quickInput.trim()}
               style={{
-                background: quickInput.trim() ? '#F0375D' : 'rgba(240,55,93,.3)', 
-                color: quickInput.trim() ? '#0a0a15' : 'rgba(10,10,21,.6)', 
-                border:'none', padding:'10px 16px', borderRadius:12, fontWeight:700, cursor: quickInput.trim() ? 'pointer' : 'not-allowed',
+                background: quickInput.trim() ? 'var(--primary)' : 'var(--btn-disabled-bg)',
+                color: quickInput.trim() ? 'var(--on-primary)' : 'var(--btn-disabled-fg)',
+                border: quickInput.trim() ? 'none' : '1px solid var(--btn-disabled-border)',
+                padding:'10px 16px', borderRadius:12, fontWeight:700, cursor: quickInput.trim() ? 'pointer' : 'not-allowed',
                 backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)',
                 boxShadow: quickInput.trim() ? '0 8px 24px rgba(0,0,0,.3)' : 'none'
               }}>
@@ -1140,6 +1393,33 @@ export default function EisenhowerPanel(){
             <span style={labelBase}>No importante</span>
           </div>
         </div>
+
+  {/* Cheat-sheet overlay */}
+        {showCheats && (
+          <div role="dialog" aria-label="Atajos de teclado" aria-modal="false"
+            style={{position:'absolute', left:'50%', top:'50%', transform:'translate(-50%, -50%)', zIndex:8,
+            background:'var(--panel-bg)', color:'var(--text)', border:'1px solid var(--panel-border)', borderRadius:12,
+            padding:16, boxShadow:'0 20px 60px rgba(0,0,0,.35)', minWidth:320}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8}}>
+              <strong>Atajos</strong>
+              <button onClick={()=> setShowCheats(false)} aria-label="Cerrar"
+                style={{background:'transparent', color:'var(--text)', border:'1px solid var(--panel-border)', borderRadius:8, padding:'2px 8px', cursor:'pointer'}}>Cerrar</button>
+            </div>
+            <ul style={{margin:0, paddingLeft:16, lineHeight:1.6, fontSize:12}}>
+              <li>N: Crear nota rápida</li>
+              <li>E: Editar nota seleccionada</li>
+              <li>Supr/Backspace: Borrar nota seleccionada</li>
+              <li>Flechas: Mover nota seleccionada</li>
+              <li>= / +: Zoom in</li>
+              <li>-: Zoom out</li>
+              <li>0: Ajustar al contenido</li>
+              <li>H / ?: Mostrar/ocultar esta ayuda</li>
+            </ul>
+          </div>
+        )}
+
+        {/* Live region for screen readers */}
+        <div data-testid="sr" aria-live="polite" aria-atomic="true" style={{position:'absolute', left:-9999, width:1, height:1, overflow:'hidden'}}>{srMsg || ' '}</div>
       </div>
     </div>
   )

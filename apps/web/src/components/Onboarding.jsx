@@ -55,9 +55,9 @@ export default function Onboarding({ open, onClose }){
   const hint = { fontSize:12, opacity:.75, marginTop:8 }
   const bar = { display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:16 }
   const dots = { display:'flex', gap:8 }
-  const dot = (i)=>({ width:10, height:10, borderRadius:20, background: i===step? '#F0375D' : 'rgba(255,255,255,.25)', boxShadow: i===step? '0 0 16px rgba(240,55,93,.5)': 'none' })
+  const dot = (i)=>({ width:10, height:10, borderRadius:20, background: i===step? 'var(--primary)' : 'rgba(255,255,255,.25)', boxShadow: i===step? '0 0 16px rgba(240,55,93,.5)': 'none' })
   const btn = (primary)=>({
-    background: primary? '#F0375D' : 'transparent', color: primary? '#0a0a15' : '#EAEAEA',
+    background: primary? 'var(--primary)' : 'transparent', color: primary? 'var(--on-primary)' : '#EAEAEA',
     border: primary? 'none' : '1px solid rgba(255,255,255,.25)', padding:'10px 14px', borderRadius:10, fontWeight:700, cursor:'pointer'
   })
 

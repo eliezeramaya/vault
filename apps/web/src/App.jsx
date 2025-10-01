@@ -25,14 +25,6 @@ export default function App(){
 
   // Load preferred theme from localStorage or system, then apply to <html data-theme>
   useEffect(()=>{
-
-  // Load initial view from localStorage (persist selected tab)
-  useEffect(()=>{
-    try{
-      const savedView = localStorage.getItem('view')
-      if (savedView === 'map' || savedView === 'matrix') setView(savedView)
-    }catch{}
-  },[])
     try{
       const saved = localStorage.getItem('theme')
       if (saved === 'light' || saved === 'dark'){
@@ -45,6 +37,14 @@ export default function App(){
     const initial = prefersDark ? 'dark' : 'light'
     setTheme(initial)
     document.documentElement.setAttribute('data-theme', initial)
+  },[])
+
+  // Load initial view from localStorage (persist selected tab)
+  useEffect(()=>{
+    try{
+      const savedView = localStorage.getItem('view')
+      if (savedView === 'map' || savedView === 'matrix') setView(savedView)
+    }catch{}
   },[])
 
   useEffect(()=>{
@@ -98,10 +98,12 @@ export default function App(){
         :root[data-theme='light'] { color-scheme: light; }
 
         :root[data-theme='dark']{
-          --bg-wrap: radial-gradient(1200px 800px at 70% 20%, rgba(240,55,93,.05), transparent 60%), linear-gradient(180deg,#0a0a15 0%, #0a0f1f 100%);
+          /* Neutrals */
+          --bg: #0A0C18;
+          --bg-wrap: var(--bg);
           --text: #EAEAEA;
-          --panel-bg: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-          --panel-border: rgba(255,255,255,.12);
+          --panel-bg: rgba(255,255,255,0.06);
+          --panel-border: rgba(255,255,255,0.14);
           --note-border: rgba(255,255,255,.4);
           --note-bg: transparent;
           --composer-bg: rgba(10,12,24,0.75);
@@ -111,26 +113,100 @@ export default function App(){
           --grid-medium: rgba(255,255,255,.13);
           --grid-major: rgba(255,255,255,.22);
           --keepout: rgba(240,55,93,.08);
+          /* Accent */
+          --primary: #F0375D;
+          --primary-hover: #FF5C7A;
+          --primary-pressed: #D22E51;
+          --on-primary: #12131A;
+          --focus: #8AB4FF;
+          /* State */
+          --success: #1DB954;
+          --warning: #FFB020;
+          --danger:  #F44336;
+          --btn-border: rgba(127,127,127,.25);
+          --btn-border-hover: rgba(255,255,255,.35);
+          --btn-border-active: rgba(255,255,255,.5);
+          --elev-hover: 0 6px 18px rgba(0,0,0,.28);
+          --elev-active: 0 3px 10px rgba(0,0,0,.36);
+          /* Accessibility tokens */
+          --placeholder: rgba(234,234,234,.72);
+          --btn-disabled-bg: #2a2f3a;
+          --btn-disabled-fg: #cfd6e3;
+          --btn-disabled-border: #3d4352;
         }
         :root[data-theme='light']{
-          --bg-wrap: radial-gradient(1200px 800px at 70% 20%, rgba(240,55,93,.08), transparent 60%), linear-gradient(180deg,#f5f7ff 0%, #eef2fb 100%);
-          --text: #0a0a15;
-          --panel-bg: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.55));
-          --panel-border: rgba(0,0,0,.08);
+          /* Neutrals */
+          --bg: #F7F8FB;
+          --bg-wrap: var(--bg);
+          --text: #12131A;
+          --panel-bg: rgba(10,12,24,0.06);
+          --panel-border: rgba(0,0,0,0.12);
           --note-border: rgba(0,0,0,.25);
           --note-bg: transparent;
           --composer-bg: rgba(255,255,255,0.85);
-          --composer-text: #0a0a15;
+          --composer-text: #12131A;
           --axis-rgb: 0,0,0;
           --grid-minor: rgba(0,0,0,.06);
           --grid-medium: rgba(0,0,0,.12);
           --grid-major: rgba(0,0,0,.20);
           --keepout: rgba(240,55,93,.10);
+          /* Accent */
+          --primary: #F0375D;
+          --primary-hover: #FF5C7A;
+          --primary-pressed: #D22E51;
+          --on-primary: #12131A;
+          --focus: #A1C3FF;
+          /* State */
+          --success: #1DB954;
+          --warning: #FFB020;
+          --danger:  #F44336;
+          --btn-border: rgba(127,127,127,.25);
+          --btn-border-hover: rgba(0,0,0,.18);
+          --btn-border-active: rgba(0,0,0,.24);
+          --elev-hover: 0 6px 18px rgba(0,0,0,.14);
+          --elev-active: 0 3px 10px rgba(0,0,0,.20);
+          /* Accessibility tokens */
+          --placeholder: rgba(18,19,26,.55);
+          --btn-disabled-bg: #e6e8ef;
+          --btn-disabled-fg: #4a5263;
+          --btn-disabled-border: #c9ceda;
         }
 
         /* Skip link for keyboard users */
         .skip-link { position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
         .skip-link:focus { left: max(10px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); width:auto; height:auto; padding:8px 12px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius:8px; color: var(--text); z-index: 200; }
+
+        /* Global interactive states */
+        button, [role='tab'], input, select, textarea, a {
+          transition: box-shadow .15s ease, border-color .15s ease, background-color .15s ease, transform .06s ease;
+        }
+        button:hover, [role='tab']:hover, a:hover {
+          box-shadow: var(--elev-hover) !important;
+          border-color: var(--btn-border-hover) !important;
+        }
+        button:active, [role='tab']:active, a:active {
+          box-shadow: var(--elev-active) !important;
+          border-color: var(--btn-border-active) !important;
+          transform: translateY(1px);
+        }
+        button:focus-visible, [role='tab']:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
+          outline: 2px solid var(--focus);
+          outline-offset: 2px;
+        }
+
+        /* Inputs and placeholders */
+        input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 1; }
+
+        /* Disabled buttons: avoid opacity-only; use explicit colors for contrast */
+        button:disabled,
+        button[aria-disabled='true']{
+          background: var(--btn-disabled-bg) !important;
+          color: var(--btn-disabled-fg) !important;
+          border-color: var(--btn-disabled-border) !important;
+          cursor: not-allowed !important;
+          box-shadow: none !important;
+          transform: none !important;
+        }
       `}</style>
       {/* Global SVG filters for visual effects (e.g., crystal-btn distortion) */}
       <svg width="0" height="0" style={{position:'absolute'}} aria-hidden focusable="false">
@@ -146,13 +222,15 @@ export default function App(){
 
       <header role="banner" style={{
         position:'absolute', top:'max(10px, env(safe-area-inset-top))', left:'max(10px, env(safe-area-inset-left))', right:'max(10px, env(safe-area-inset-right))',
-        zIndex:18
+        zIndex:18,
+        pointerEvents:'none'
       }}>
         <div style={{
           display:'flex', alignItems:'center', gap:12,
           background:'var(--panel-bg)', border:'1px solid var(--panel-border)', color:'var(--text)',
           padding:'10px 12px', borderRadius:12,
-          boxShadow:'0 12px 36px rgba(0,0,0,.22)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)'
+          boxShadow:'0 12px 36px rgba(0,0,0,.22)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)',
+          pointerEvents:'auto'
         }}>
           {/* Logo */}
           <div aria-hidden="true" style={{
@@ -171,8 +249,8 @@ export default function App(){
               aria-controls="panel-map"
               onClick={()=> setView('map')}
               style={{
-                background: view==='map' ? '#F0375D' : 'transparent',
-                color: view==='map' ? '#0a0a15' : 'var(--text)',
+                background: view==='map' ? 'var(--primary)' : 'transparent',
+                color: view==='map' ? 'var(--on-primary)' : 'var(--text)',
                 border:'1px solid rgba(127,127,127,.25)', borderRadius:10,
                 padding:'8px 12px', minHeight:36, minWidth:44, fontWeight:700, cursor:'pointer'
               }}
@@ -184,8 +262,8 @@ export default function App(){
               aria-controls="panel-matrix"
               onClick={()=> setView('matrix')}
               style={{
-                background: view==='matrix' ? '#F0375D' : 'transparent',
-                color: view==='matrix' ? '#0a0a15' : 'var(--text)',
+                background: view==='matrix' ? 'var(--primary)' : 'transparent',
+                color: view==='matrix' ? 'var(--on-primary)' : 'var(--text)',
                 border:'1px solid rgba(127,127,127,.25)', borderRadius:10,
                 padding:'8px 12px', minHeight:36, minWidth:44, fontWeight:700, cursor:'pointer'
               }}
@@ -240,6 +318,7 @@ export default function App(){
           onEnterMatrix={()=>{ setView('matrix'); setShowWelcome(false) }}
           onEnterMap={()=>{ setView('map'); setShowWelcome(false) }}
           onDemo={startDemo}
+          onClose={()=> setShowWelcome(false)}
         />
       )}
 
@@ -255,15 +334,6 @@ export default function App(){
           {view==='matrix' && <EisenhowerPanel />}
         </div>
       </main>
-      {/* Toggle between Map (Globe) and Eisenhower Matrix as ARIA tabpanels */}
-      <div role="tabpanel" id="panel-map" aria-labelledby="tab-map" hidden={view!=='map'}>
-        {view==='map' && (
-          <Globe onHelp={()=>setShowOb(true)} onReady={handleGlobeReady} onApi={(api)=> (globeApiRef.current = api)} />
-        )}
-      </div>
-      <div role="tabpanel" id="panel-matrix" aria-labelledby="tab-matrix" hidden={view!=='matrix'}>
-        {view==='matrix' && <EisenhowerPanel />}
-      </div>
 
       <Onboarding open={showOb} onClose={()=>setShowOb(false)} />
       <Preloader progress={loadPct} visible={loading && view==='map'} />
@@ -278,7 +348,7 @@ export default function App(){
             style={{
               position:'absolute', right:'max(16px, env(safe-area-inset-right))', bottom:'max(16px, env(safe-area-inset-bottom))',
               width:56, height:56, borderRadius:28, cursor:'pointer', zIndex:15,
-              background:'#F0375D', color:'#0a0a15', border:'none', boxShadow:'0 10px 26px rgba(240,55,93,.35)', fontSize:24, fontWeight:900
+              background:'var(--primary)', color:'var(--on-primary)', border:'none', boxShadow:'0 10px 26px rgba(240,55,93,.35)', fontSize:24, fontWeight:900
             }}
           >+
           </button>

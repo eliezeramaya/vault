@@ -74,7 +74,7 @@ export default function HeatmapControls({
     >
       <style>{`
         [data-hud] input:focus-visible, [data-hud] label:focus-visible, [data-hud] button:focus-visible {
-          outline: 2px solid #F0375D;
+          outline: 2px solid var(--focus);
           outline-offset: 2px;
           border-radius: 6px;
         }
