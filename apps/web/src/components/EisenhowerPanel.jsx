@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Pencil, Scale, Save, X, RefreshCcw, ZoomIn, ZoomOut, Home } from 'lucide-react'
 
 // Eisenhower Matrix with liquid-glass panel and a 72×72 = 5184 cell grid
 export default function EisenhowerPanel(){
@@ -969,7 +970,7 @@ export default function EisenhowerPanel(){
                               borderRadius:4, padding:'2px 6px', fontSize:10, cursor:'pointer', userSelect:'none'
                             }}
                           >
-                            ✎
+                            <Pencil size={16} aria-hidden="true" />
                           </button>
                           <button
                             type="button"
@@ -982,7 +983,7 @@ export default function EisenhowerPanel(){
                               borderRadius:4, padding:'2px 6px', fontSize:10, cursor:'pointer', userSelect:'none'
                             }}
                           >
-                            ⚖️
+                            <Scale size={16} aria-hidden="true" />
                           </button>
                           {weightFor === n.id && (
                             <div
@@ -1052,8 +1053,12 @@ export default function EisenhowerPanel(){
                           }}
                         />
                         <div style={{position:'absolute', right:6, bottom:6, display:'flex', gap:6}}>
-                          <button type="submit" aria-label="Guardar" title="Guardar" style={{ background:'#F0375D', color:'#0a0a15', border:'none', padding:'4px 8px', borderRadius:6, fontWeight:700 }}>💾</button>
-                          <button type="button" onClick={cancelComposer} aria-label="Cancelar" title="Cancelar" style={{ background:'transparent', color:'#0a0a15', border:'1px solid rgba(0,0,0,.2)', padding:'4px 8px', borderRadius:6 }}>✕</button>
+                          <button type="submit" aria-label="Guardar" title="Guardar" style={{ background:'#F0375D', color:'#0a0a15', border:'none', padding:'4px 8px', borderRadius:6, fontWeight:700 }}>
+                            <Save size={16} aria-hidden="true" />
+                          </button>
+                          <button type="button" onClick={cancelComposer} aria-label="Cancelar" title="Cancelar" style={{ background:'transparent', color:'#0a0a15', border:'1px solid rgba(0,0,0,.2)', padding:'4px 8px', borderRadius:6 }}>
+                            <X size={16} aria-hidden="true" />
+                          </button>
                         </div>
                         <div style={{position:'absolute', left:8, bottom:8, fontSize:10, opacity:.6}}>{(composer.text||'').length}/{MAX_TEXT}</div>
                       </form>
@@ -1071,15 +1076,25 @@ export default function EisenhowerPanel(){
         <div style={{position:'absolute', top:8, right:8, display:'flex', gap:8, alignItems:'center', zIndex:5}}>
           <span aria-live="polite" style={{fontSize:11, opacity:.8}}>Notas: {notes.length} / ~{capacity}</span>
           <button aria-label="Reordenar denso" title="Reordenar denso" onClick={repackDense}
-            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>↻</button>
+            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+            <RefreshCcw size={18} aria-hidden="true" />
+          </button>
           <button aria-label="Zoom out" title="Zoom -" onClick={()=> setZoom(z=> Math.max(ZMIN, +(z - ZSTEP).toFixed(2)))}
-            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>−</button>
+            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+            <ZoomOut size={18} aria-hidden="true" />
+          </button>
           <button aria-label="Reset zoom" title="Reset" onClick={()=> setZoom(1)}
-            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:56, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>{Math.round(zoom*100)}%</button>
+            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:56, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+            {Math.round(zoom*100)}%
+          </button>
           <button aria-label="Zoom to fit content" title="Ajustar al contenido" onClick={zoomToFit}
-            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>⌂</button>
+            style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+            <Home size={18} aria-hidden="true" />
+          </button>
           <button aria-label="Zoom in" title="Zoom +" onClick={()=> setZoom(z=> Math.min(ZMAX, +(z + ZSTEP).toFixed(2)))}
-            style={{background:'#F0375D', color:'#0a0a15', border:'none', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:900, cursor:'pointer'}}>+</button>
+            style={{background:'#F0375D', color:'#0a0a15', border:'none', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:900, cursor:'pointer'}}>
+            <ZoomIn size={18} aria-hidden="true" />
+          </button>
         </div>
 
         {/* Quick input panel - bottom center */}

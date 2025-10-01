@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { Sun, Moon, HelpCircle, MoreHorizontal } from 'lucide-react'
 import Globe from './components/Globe'
 import EisenhowerPanel from './components/EisenhowerPanel'
 import Welcome from './components/Welcome'
@@ -24,6 +25,14 @@ export default function App(){
 
   // Load preferred theme from localStorage or system, then apply to <html data-theme>
   useEffect(()=>{
+
+  // Load initial view from localStorage (persist selected tab)
+  useEffect(()=>{
+    try{
+      const savedView = localStorage.getItem('view')
+      if (savedView === 'map' || savedView === 'matrix') setView(savedView)
+    }catch{}
+  },[])
     try{
       const saved = localStorage.getItem('theme')
       if (saved === 'light' || saved === 'dark'){
@@ -42,6 +51,11 @@ export default function App(){
     document.documentElement.setAttribute('data-theme', theme)
     try{ localStorage.setItem('theme', theme) }catch{}
   },[theme])
+
+  // Persist view selection
+  useEffect(()=>{
+    try{ localStorage.setItem('view', view) }catch{}
+  },[view])
 
   // Simulate perceived loading progression up to 95% until Globe signals ready
   useEffect(()=>{
@@ -113,6 +127,10 @@ export default function App(){
           --grid-major: rgba(0,0,0,.20);
           --keepout: rgba(240,55,93,.10);
         }
+
+        /* Skip link for keyboard users */
+        .skip-link { position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+        .skip-link:focus { left: max(10px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); width:auto; height:auto; padding:8px 12px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius:8px; color: var(--text); z-index: 200; }
       `}</style>
       {/* Global SVG filters for visual effects (e.g., crystal-btn distortion) */}
       <svg width="0" height="0" style={{position:'absolute'}} aria-hidden focusable="false">
@@ -121,6 +139,102 @@ export default function App(){
           <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
       </svg>
+
+      {/* Top navigation bar (persistent) */}
+      {/* Skip link */}
+      <a href="#main" className="skip-link">Saltar al contenido</a>
+
+      <header role="banner" style={{
+        position:'absolute', top:'max(10px, env(safe-area-inset-top))', left:'max(10px, env(safe-area-inset-left))', right:'max(10px, env(safe-area-inset-right))',
+        zIndex:18
+      }}>
+        <div style={{
+          display:'flex', alignItems:'center', gap:12,
+          background:'var(--panel-bg)', border:'1px solid var(--panel-border)', color:'var(--text)',
+          padding:'10px 12px', borderRadius:12,
+          boxShadow:'0 12px 36px rgba(0,0,0,.22)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)'
+        }}>
+          {/* Logo */}
+          <div aria-hidden="true" style={{
+            width:28, height:28, borderRadius:8, display:'grid', placeItems:'center',
+            background:'conic-gradient(from 210deg, #0f2a4d, #f0375d 40%, #db2d50, #0f2a4d)',
+            fontWeight:900
+          }}>IS</div>
+          <div style={{fontWeight:800, letterSpacing:.3}}>Idea Sphere</div>
+
+          {/* Tabs */}
+          <nav role="tablist" aria-label="Vistas" style={{display:'flex', gap:6, marginLeft:16}}>
+            <button
+              id="tab-map"
+              role="tab"
+              aria-selected={view==='map'}
+              aria-controls="panel-map"
+              onClick={()=> setView('map')}
+              style={{
+                background: view==='map' ? '#F0375D' : 'transparent',
+                color: view==='map' ? '#0a0a15' : 'var(--text)',
+                border:'1px solid rgba(127,127,127,.25)', borderRadius:10,
+                padding:'8px 12px', minHeight:36, minWidth:44, fontWeight:700, cursor:'pointer'
+              }}
+            >Mapa</button>
+            <button
+              id="tab-matrix"
+              role="tab"
+              aria-selected={view==='matrix'}
+              aria-controls="panel-matrix"
+              onClick={()=> setView('matrix')}
+              style={{
+                background: view==='matrix' ? '#F0375D' : 'transparent',
+                color: view==='matrix' ? '#0a0a15' : 'var(--text)',
+                border:'1px solid rgba(127,127,127,.25)', borderRadius:10,
+                padding:'8px 12px', minHeight:36, minWidth:44, fontWeight:700, cursor:'pointer'
+              }}
+            >Matriz</button>
+          </nav>
+
+          <div style={{marginLeft:'auto', display:'flex', gap:8, alignItems:'center'}}>
+            {/* Help */}
+            <button
+              type="button"
+              onClick={()=> setShowOb(true)}
+              aria-label="Ayuda y atajos"
+              title="Ayuda y atajos"
+              style={{
+                background:'transparent', color:'var(--text)', border:'1px solid rgba(127,127,127,.25)',
+                padding:'8px 10px', minHeight:36, minWidth:36, borderRadius:10, fontWeight:800, cursor:'pointer'
+              }}
+            >
+              <HelpCircle size={18} aria-hidden="true" />
+            </button>
+            {/* Theme toggle */}
+            <button
+              type="button"
+              onClick={()=> setTheme(t=> t==='dark' ? 'light' : 'dark')}
+              aria-label={theme==='dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              title={theme==='dark' ? 'Modo claro' : 'Modo oscuro'}
+              style={{
+                background: 'transparent',
+                color: 'var(--text)',
+                border:'1px solid rgba(127,127,127,.25)',
+                padding:'8px 10px', minHeight:36, minWidth:44, borderRadius:10,
+                fontWeight:700, cursor:'pointer', lineHeight:1
+              }}
+            >{theme==='dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</button>
+            {/* Menu placeholder */}
+            <button
+              type="button"
+              aria-label="Menú"
+              title="Menú"
+              style={{
+                background:'transparent', color:'var(--text)', border:'1px solid rgba(127,127,127,.25)',
+                padding:'8px 10px', minHeight:36, minWidth:36, borderRadius:10, fontWeight:800, cursor:'pointer'
+              }}
+            >
+              <MoreHorizontal size={18} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </header>
       {showWelcome && (
         <Welcome
           onEnterMatrix={()=>{ setView('matrix'); setShowWelcome(false) }}
@@ -129,12 +243,27 @@ export default function App(){
         />
       )}
 
-      {/* Toggle between Map (Globe) and Eisenhower Matrix */}
-      {view === 'map' ? (
-        <Globe onHelp={()=>setShowOb(true)} onReady={handleGlobeReady} onApi={(api)=> (globeApiRef.current = api)} />
-      ) : (
-        <EisenhowerPanel />
-      )}
+      {/* Main content area with tabpanels */}
+      <main id="main" role="main" style={{position:'relative'}}>
+        {/* Toggle between Map (Globe) and Eisenhower Matrix as ARIA tabpanels */}
+        <div role="tabpanel" id="panel-map" aria-labelledby="tab-map" hidden={view!=='map'}>
+          {view==='map' && (
+            <Globe onHelp={()=>setShowOb(true)} onReady={handleGlobeReady} onApi={(api)=> (globeApiRef.current = api)} />
+          )}
+        </div>
+        <div role="tabpanel" id="panel-matrix" aria-labelledby="tab-matrix" hidden={view!=='matrix'}>
+          {view==='matrix' && <EisenhowerPanel />}
+        </div>
+      </main>
+      {/* Toggle between Map (Globe) and Eisenhower Matrix as ARIA tabpanels */}
+      <div role="tabpanel" id="panel-map" aria-labelledby="tab-map" hidden={view!=='map'}>
+        {view==='map' && (
+          <Globe onHelp={()=>setShowOb(true)} onReady={handleGlobeReady} onApi={(api)=> (globeApiRef.current = api)} />
+        )}
+      </div>
+      <div role="tabpanel" id="panel-matrix" aria-labelledby="tab-matrix" hidden={view!=='matrix'}>
+        {view==='matrix' && <EisenhowerPanel />}
+      </div>
 
       <Onboarding open={showOb} onClose={()=>setShowOb(false)} />
       <Preloader progress={loadPct} visible={loading && view==='map'} />
@@ -170,46 +299,11 @@ export default function App(){
         }}>Demo en progreso · {demoLeft}s  —  Puedes arrastrar nodos y ajustar el heatmap</div>
       )}
 
-      {/* Theme toggle + View switcher */}
-      <div style={{position:'absolute', top:'max(12px, env(safe-area-inset-top))', right:'max(12px, env(safe-area-inset-right))', zIndex:25, display:'flex', gap:8, alignItems:'center'}}>
-        <button
-          type="button"
-          onClick={()=> setTheme(t=> t==='dark' ? 'light' : 'dark')}
-          aria-label={theme==='dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-          title={theme==='dark' ? 'Modo claro' : 'Modo oscuro'}
-          style={{
-            background: theme==='dark' ? 'rgba(10,12,24,.6)' : '#F9F9FB',
-            color: theme==='dark' ? '#EAEAEA' : '#0a0a15',
-            border:'1px solid rgba(127,127,127,.3)',
-            padding:'10px', minHeight:40, minWidth:44, borderRadius:10,
-            fontWeight:700, cursor:'pointer', lineHeight:1
-          }}
-        >{theme==='dark' ? '☀️' : '🌙'}</button>
-        <button
-          type="button"
-          onClick={()=> setView('map')}
-          aria-pressed={view==='map'}
-          style={{
-            background: view==='map' ? '#F0375D' : 'rgba(10,12,24,.6)',
-            color: view==='map' ? '#0a0a15' : '#EAEAEA',
-            border:'1px solid rgba(255,255,255,.15)',
-            padding:'10px 14px', minHeight:40, minWidth:44, borderRadius:10,
-            fontWeight:700, cursor:'pointer'
-          }}
-        >Mapa</button>
-        <button
-          type="button"
-          onClick={()=> setView('matrix')}
-          aria-pressed={view==='matrix'}
-          style={{
-            background: view==='matrix' ? '#F0375D' : 'rgba(10,12,24,.6)',
-            color: view==='matrix' ? '#0a0a15' : '#EAEAEA',
-            border:'1px solid rgba(255,255,255,.15)',
-            padding:'10px 14px', minHeight:40, minWidth:44, borderRadius:10,
-            fontWeight:700, cursor:'pointer'
-          }}
-        >Matriz</button>
-      </div>
+      {/* Removed old floating theme/view switcher in favor of top nav */}
+      {/* Footer landmark */}
+      <footer role="contentinfo" style={{position:'absolute', left:16, right:16, bottom:16, pointerEvents:'none'}} aria-hidden>
+        {/* Reserved for future legal/links; kept minimal to avoid overlap */}
+      </footer>
     </div>
   )
 }

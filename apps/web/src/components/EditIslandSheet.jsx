@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { X, Save } from 'lucide-react'
 
 export default function EditIslandSheet({ open, node, onClose, onSave, onConnect, onDuplicate, onDelete, onFocus }){
   const [title, setTitle] = useState(node?.id || '')
@@ -42,7 +43,9 @@ export default function EditIslandSheet({ open, node, onClose, onSave, onConnect
       <div ref={sheetRef} tabIndex={-1} style={sheet}>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
           <div id="editTitle" style={{fontWeight:800, letterSpacing:.3}}>Editar isla</div>
-          <button type="button" onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{minWidth:44, minHeight:44, padding:'10px 12px', borderRadius:10, border:'1px solid rgba(255,255,255,.25)', background:'transparent', color:'#EAEAEA', cursor:'pointer'}}>✕</button>
+          <button type="button" onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{minWidth:44, minHeight:44, padding:'10px 12px', borderRadius:10, border:'1px solid rgba(255,255,255,.25)', background:'transparent', color:'#EAEAEA', cursor:'pointer'}}>
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
         <div style={row}>
           <label style={label} htmlFor="editTitleInput">Título</label>
@@ -66,8 +69,12 @@ export default function EditIslandSheet({ open, node, onClose, onSave, onConnect
             <button type="button" style={btn(false)} onClick={onFocus}>Foco</button>
           </div>
           <div style={{display:'flex', gap:12}}>
-            <button type="button" style={btn(false)} onClick={onClose} aria-label="Cancelar" title="Cancelar">✕</button>
-            <button type="button" style={btn(true)} onClick={()=> onSave?.({ title, zone: zone || undefined, priority })} aria-label="Guardar" title="Guardar">💾</button>
+            <button type="button" style={btn(false)} onClick={onClose} aria-label="Cancelar" title="Cancelar">
+              <X size={18} aria-hidden="true" />
+            </button>
+            <button type="button" style={btn(true)} onClick={()=> onSave?.({ title, zone: zone || undefined, priority })} aria-label="Guardar" title="Guardar">
+              <Save size={18} aria-hidden="true" />
+            </button>
           </div>
         </div>
       </div>
