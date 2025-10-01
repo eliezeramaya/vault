@@ -132,8 +132,8 @@ export default function EisenhowerPanel(){
     return { col: Math.floor(MIDC),   row: Math.floor(MIDR) } // BR
   }
 
-  // Compute chip integer span in cell units (independent of zoom) and enforce a 1-cell gap between chips
-  const GAP_CELLS = 1 // desired empty grid cells between chip edges
+  // Compute chip integer span in cell units (independent of zoom); no extra gap between chips (they can touch)
+  const GAP_CELLS = 0 // empty grid cells between chip edges (0 = allow contact, no overlap)
   const chipSpanCells = ()=>{
     // Map fixed chip px to whole-cell span using virtual canvas size
     const w = Math.ceil((CHIP_PX / CANVAS_PX) * COLS)
