@@ -18,6 +18,9 @@ export default function App(){
   const globeApiRef = useRef(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [view, setView] = useState('map') // 'map' | 'matrix'
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+  const menuBtnRef = useRef(null)
 
   useEffect(()=>{
     return ()=> { if (demoTimer.current) clearInterval(demoTimer.current) }
@@ -52,6 +55,21 @@ export default function App(){
     try{ localStorage.setItem('theme', theme) }catch{}
   },[theme])
 
+  // Global keyboard shortcut: open help/shortcuts with H or ?
+  useEffect(()=>{
+    const onKeyDown = (e)=>{
+      if (e.defaultPrevented) return
+      const el = e.target
+      const tag = (el && el.tagName ? el.tagName : '').toLowerCase()
+      const typing = tag === 'input' || tag === 'textarea' || (el && el.isContentEditable)
+      if (typing) return
+      const isHelp = e.key === 'h' || e.key === 'H' || e.key === '?' || (e.key === '/' && e.shiftKey)
+      if (isHelp){ e.preventDefault(); setShowOb(true) }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return ()=> window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
   // Persist view selection
   useEffect(()=>{
     try{ localStorage.setItem('view', view) }catch{}
@@ -71,6 +89,18 @@ export default function App(){
     return ()=> clearInterval(id)
   },[loading])
 
+  // Failsafe: if Globe never signals ready (e.g., no WebGL / slow devices), finish loader after a timeout
+  useEffect(()=>{
+    if (!loading) return
+    const FAILSAFE_MS = 12000
+    const t = setTimeout(()=>{
+      // If still loading after the timeout, complete and hide the loader
+      setLoadPct(100)
+      setTimeout(()=> setLoading(false), 280)
+    }, FAILSAFE_MS)
+    return ()=> clearTimeout(t)
+  }, [loading])
+
   const handleGlobeReady = ()=>{
     // Finish to 100% and hide loader shortly after for a short fade
     setLoadPct(100)
@@ -88,6 +118,24 @@ export default function App(){
       })
     },1000)
   }
+
+  // Close menu on outside click or Esc
+  useEffect(()=>{
+    if (!menuOpen) return
+    const onDocDown = (e)=>{
+      const m = menuRef.current
+      const b = menuBtnRef.current
+      if (!m || !b) return
+      if (!m.contains(e.target) && !b.contains(e.target)) setMenuOpen(false)
+    }
+    const onKey = (e)=>{ if (e.key === 'Escape') setMenuOpen(false) }
+    document.addEventListener('mousedown', onDocDown)
+    document.addEventListener('keydown', onKey)
+    return ()=>{
+      document.removeEventListener('mousedown', onDocDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
 
   return (
     <div className="app" style={{position:'relative'}}>
@@ -307,8 +355,8 @@ export default function App(){
             <button
               type="button"
               onClick={()=> setShowOb(true)}
-              aria-label="Ayuda y atajos"
-              title="Ayuda y atajos"
+              aria-label="Ayuda y atajos (H / ?)"
+              title="Ayuda y atajos (H / ?)"
               style={{
                 background:'transparent', color:'var(--text)', border:'1px solid var(--surface-border)',
                 padding:'8px 10px', minHeight:36, minWidth:36, borderRadius:10, fontWeight:800, cursor:'pointer'
@@ -330,17 +378,63 @@ export default function App(){
                 fontWeight:700, cursor:'pointer', lineHeight:1
               }}
             >{theme==='dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</button>
-            {/* Menu placeholder */}
-            <button
-              type="button"
-              aria-label="Menú"
-              title="Menú"
-              style={{
-                background:'transparent', color:'var(--text)', border:'1px solid var(--surface-border)'
-              }}
-            >
-              <MoreHorizontal size={18} aria-hidden="true" />
-            </button>
+            {/* Menu */}
+            <div style={{ position:'relative' }}>
+              <button
+                ref={menuBtnRef}
+                type="button"
+                aria-label="Menú"
+                title="Menú"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={()=> setMenuOpen(o=> !o)}
+                style={{
+                  background:'transparent', color:'var(--text)', border:'1px solid var(--surface-border)',
+                  padding:'8px 10px', minHeight:36, minWidth:44, borderRadius:10,
+                  fontWeight:700, cursor:'pointer', lineHeight:1
+                }}
+              >
+                <MoreHorizontal size={18} aria-hidden="true" />
+              </button>
+              {menuOpen && (
+                <div
+                  ref={menuRef}
+                  role="menu"
+                  aria-label="Menú principal"
+                  style={{
+                    position:'absolute', right:0, top:'calc(100% + 8px)', zIndex:30,
+                    background:'var(--panel-bg)', border:'1px solid var(--panel-border)', color:'var(--text)',
+                    borderRadius:12, boxShadow:'0 16px 48px rgba(0,0,0,.28)', minWidth:200,
+                    padding:6, backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)'
+                  }}
+                >
+                  <button role="menuitem" type="button"
+                    onClick={()=>{ setShowOb(true); setMenuOpen(false) }}
+                    style={{
+                      display:'flex', width:'100%', textAlign:'left',
+                      background:'transparent', color:'var(--text)', border:'1px solid transparent',
+                      padding:'10px 12px', borderRadius:8, cursor:'pointer'
+                    }}
+                  >Ayuda y atajos</button>
+                  <button role="menuitem" type="button"
+                    onClick={()=>{ setTheme(t=> t==='dark' ? 'light' : 'dark'); setMenuOpen(false) }}
+                    style={{
+                      display:'flex', width:'100%', textAlign:'left',
+                      background:'transparent', color:'var(--text)', border:'1px solid transparent',
+                      padding:'10px 12px', borderRadius:8, cursor:'pointer'
+                    }}
+                  >Cambiar tema</button>
+                  <button role="menuitem" type="button"
+                    onClick={()=>{ setView(v=> v==='map' ? 'matrix' : 'map'); setMenuOpen(false) }}
+                    style={{
+                      display:'flex', width:'100%', textAlign:'left',
+                      background:'transparent', color:'var(--text)', border:'1px solid transparent',
+                      padding:'10px 12px', borderRadius:8, cursor:'pointer'
+                    }}
+                  >{view==='map' ? 'Ir a Matriz' : 'Ir a Mapa'}</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>

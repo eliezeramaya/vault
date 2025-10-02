@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test('keyboard shortcuts: create, edit, move, delete, zoom', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/vault/')
   await page.getByRole('button', { name: 'Entrar a la Matriz' }).click()
 
   // Create via N
@@ -43,7 +43,7 @@ test('keyboard shortcuts: create, edit, move, delete, zoom', async ({ page }) =>
 })
 
 test('live region announces key events', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/vault/')
   await page.getByRole('button', { name: 'Entrar a la Matriz' }).click()
 
   // Quick create via input

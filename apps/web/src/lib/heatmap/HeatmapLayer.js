@@ -47,10 +47,11 @@ export function createHeatLayer({ width, height, texture, opacity = 0.85, revers
     },
     blending: THREE.AdditiveBlending,
     depthWrite: false,
+    depthTest: false,
     transparent: true,
   });
 
   const mesh = new THREE.Mesh(geom, mat);
-  mesh.renderOrder = 3;
+  mesh.renderOrder = 1.5;
   return mesh;
 }

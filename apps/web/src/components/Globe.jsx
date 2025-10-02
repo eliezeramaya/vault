@@ -9,7 +9,7 @@ import { createHeatLayer } from '../lib/heatmap/HeatmapLayer';
 // Plano 2D (relación 2:1, como proyección equirectangular 360x180)
 const PLANE_WIDTH = 10;
 const PLANE_HEIGHT = PLANE_WIDTH / 2;
-const LABEL_Z = 0.06; // altura leve sobre el plano para los chips
+const LABEL_Z = 0.08; // altura leve sobre el plano para los chips (más alto para evitar Z-fighting)
 const ROTATION_SPEED = 0.0; // sin auto-rotación en modo plano
 
 const d2r = (d)=> (d*Math.PI)/180;
@@ -158,8 +158,9 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
 
   // Plano base
   const planeGeom = new THREE.PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT, 1, 1);
-  const planeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(readCssVar('--map-plane', '#10162f')), roughness:.8, metalness:.1, side: THREE.DoubleSide });
+  const planeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(readCssVar('--map-plane', '#10162f')), roughness:.8, metalness:.1, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
   const plane = new THREE.Mesh(planeGeom, planeMat);
+  plane.renderOrder = 0;
   scene.add(plane);
 
     // Grid rectangular (lat/lon)
@@ -167,6 +168,8 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
       color: new THREE.Color(readCssVar('--grid-medium', '#2a3a7a')).getHex(),
       opacity: 0.35
     });
+    // Asegurar líneas encima del plano sin competir por Z
+    rectGrid.traverse(obj => { if (obj.material) { obj.material.depthTest = false; obj.renderOrder = 1; } });
     scene.add(rectGrid);
     gridRef.current = rectGrid;
 
@@ -367,6 +370,8 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
 
     // HEATMAP
   const heatPass = new HeatmapPass(renderer, { width:1024, height:512, sigmaPx: initialSigmaRef.current });
+    // Alinear DPR del heatmap con el canvas principal
+    try { heatPass.setDPR(renderer.getPixelRatio?.() ?? 1); } catch {}
     heatPassRef.current = heatPass;
   const heatLayer = createHeatLayer({ width: PLANE_WIDTH, height: PLANE_HEIGHT, texture: heatPass.texture, opacity: initialOpacityRef.current, reverse: initialReverseRef.current });
     heatLayerRef.current = heatLayer;
@@ -380,6 +385,11 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
       heatPass.setPoints(pts, { defaultRadiusPx: 32 });
       heatPass.render();
       heatLayer.material.uniforms.uHeatTex.value = heatPass.texture;
+      // Expose for tests/validation
+      try {
+        window.__heatPts = pts;
+        window.__nodeCoords = nodesRef.current.map(n => ({ lat: n.lat, lon: n.lon }));
+      } catch {}
     }
     refreshHeat();
 
@@ -621,6 +631,9 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
             el.style.display = 'inline-flex';
             el.style.left = `${x}px`;
             el.style.top = `${y}px`;
+            // Expose current geodetic position for testing/validation
+            el.setAttribute('data-lat', String(Math.round(n.lat * 100) / 100));
+            el.setAttribute('data-lon', String(Math.round(n.lon * 100) / 100));
             el.style.boxShadow = (idx===hoveredIdxRef.current || idx===selectedIdxRef.current)
               ? '0 10px 30px rgba(0,0,0,.55), 0 0 0 2px var(--focus-ring, rgba(159,180,255,.8))'
               : '0 6px 20px rgba(0,0,0,.35)';
@@ -695,6 +708,9 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
     const onResize = () => {
       const w = mountEl.clientWidth, h = mountEl.clientHeight;
       renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix();
+      try { heatPass.setDPR(renderer.getPixelRatio?.() ?? 1); } catch {}
+      // Mantén proporción 2:1 del RT, o ajusta si necesitas mayor resolución
+      try { heatPass.setSize(1024, 512); } catch {}
     };
     window.addEventListener('resize', onResize);
 

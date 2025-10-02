@@ -9,6 +9,8 @@
     "build": "vite build",
     "postbuild": "node -e \"const fs=require('fs');fs.copyFileSync('dist/index.html','dist/404.html');console.log('SPA fallback 404.html created');\"",
     "preview": "vite preview",
+    "test:e2e": "playwright test tests/pwa.spec.ts",
+    "test:all": "playwright test",
     "lint": "eslint src --ext .js,.jsx"
   },
   "dependencies": {

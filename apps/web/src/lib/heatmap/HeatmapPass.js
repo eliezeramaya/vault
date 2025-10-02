@@ -6,13 +6,17 @@ import * as THREE from 'three';
 export class HeatmapPass {
   constructor(renderer, { width = 1024, height = 512, sigmaPx = 28, maxPoints = 4096 } = {}) {
     this.renderer = renderer;
-    this.size = new THREE.Vector2(width, height);
+    this.baseSize = new THREE.Vector2(width, height); // logical (pre-DPR)
+    this.dpr = (typeof renderer.getPixelRatio === 'function') ? renderer.getPixelRatio() : 1;
+    const scaledW = Math.max(1, Math.round(width * this.dpr));
+    const scaledH = Math.max(1, Math.round(height * this.dpr));
+    this.size = new THREE.Vector2(scaledW, scaledH); // physical RT size
     this.sigmaPx = sigmaPx;
     this.maxPoints = maxPoints;
 
-    const pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.FloatType, depthBuffer: false, stencilBuffer: false };
-    this.rtA = new THREE.WebGLRenderTarget(width, height, pars);
-    this.rtB = new THREE.WebGLRenderTarget(width, height, pars);
+  const pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.FloatType, depthBuffer: false, stencilBuffer: false };
+  this.rtA = new THREE.WebGLRenderTarget(scaledW, scaledH, pars);
+  this.rtB = new THREE.WebGLRenderTarget(scaledW, scaledH, pars);
 
     this.orthoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.fsScene = new THREE.Scene();
@@ -66,7 +70,7 @@ export class HeatmapPass {
       }
     `;
 
-    this.splatMat = new THREE.ShaderMaterial({
+  this.splatMat = new THREE.ShaderMaterial({
       vertexShader: splatVert,
       fragmentShader: splatFrag,
       transparent: true,
@@ -74,7 +78,7 @@ export class HeatmapPass {
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       uniforms: {
-        uTexSize: { value: this.size.clone() },
+  uTexSize: { value: this.size.clone() },
         uSigmaNorm: { value: 0.45 },
         uAlpha: { value: 1.0 },
       }
@@ -109,7 +113,7 @@ export class HeatmapPass {
       void main() { gl_FragColor = sampleGaussian(gl_FragCoord.xy * uInvTexSize); }
     `;
 
-    this.blurMat = new THREE.ShaderMaterial({
+  this.blurMat = new THREE.ShaderMaterial({
       vertexShader: `
         varying vec2 vUv;
         void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
@@ -119,11 +123,40 @@ export class HeatmapPass {
       depthWrite: false,
       uniforms: {
         uTex: { value: null },
-        uInvTexSize: { value: new THREE.Vector2(1/width, 1/height) },
+        uInvTexSize: { value: new THREE.Vector2(1/scaledW, 1/scaledH) },
         uDir: { value: new THREE.Vector2(1,0) },
         uSigmaPx: { value: sigmaPx }
       }
     });
+  }
+
+  setDPR(dpr){
+    const newDpr = Math.max(0.5, Math.min(4, dpr || 1));
+    if (Math.abs(newDpr - this.dpr) < 1e-3) return;
+    this.dpr = newDpr;
+    const sw = Math.max(1, Math.round(this.baseSize.x * this.dpr));
+    const sh = Math.max(1, Math.round(this.baseSize.y * this.dpr));
+    this._resizeRenderTargets(sw, sh);
+  }
+
+  setSize(width, height){
+    this.baseSize.set(width, height);
+    const sw = Math.max(1, Math.round(width * this.dpr));
+    const sh = Math.max(1, Math.round(height * this.dpr));
+    this._resizeRenderTargets(sw, sh);
+  }
+
+  _resizeRenderTargets(sw, sh){
+    // Dispose old RTs and create new with updated size
+    if (this.rtA) this.rtA.dispose();
+    if (this.rtB) this.rtB.dispose();
+    const pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.FloatType, depthBuffer: false, stencilBuffer: false };
+    this.rtA = new THREE.WebGLRenderTarget(sw, sh, pars);
+    this.rtB = new THREE.WebGLRenderTarget(sw, sh, pars);
+    this.size.set(sw, sh);
+    // Update uniforms that depend on texture size
+    if (this.splatMat?.uniforms?.uTexSize) this.splatMat.uniforms.uTexSize.value.set(sw, sh);
+    if (this.blurMat?.uniforms?.uInvTexSize) this.blurMat.uniforms.uInvTexSize.value.set(1/sw, 1/sh);
   }
 
   setPoints(points, { defaultRadiusPx = 28 } = {}) {

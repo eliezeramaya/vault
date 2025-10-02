@@ -28,7 +28,7 @@ const overlaps = (a: {x:number;y:number;width:number;height:number}, b: {x:numbe
 };
 
 test('crear varias notas no se empalman', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/vault/');
   // Entrar a la Matriz
   await page.getByRole('button', { name: 'Entrar a la Matriz' }).click();
 
@@ -49,7 +49,7 @@ test('crear varias notas no se empalman', async ({ page }) => {
 });
 
 test('drag reroutes to non-colliding slot', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/vault/');
   await page.getByRole('button', { name: 'Entrar a la Matriz' }).click();
 
   await addQuick(page, 'A');
