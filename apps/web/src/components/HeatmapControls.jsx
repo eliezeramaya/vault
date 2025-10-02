@@ -34,10 +34,10 @@ export default function HeatmapControls({
     bottom: 'max(12px, env(safe-area-inset-bottom))',
     padding: '10px',
     borderRadius: 14,
-    background: 'rgba(10,12,24,.72)',
-    boxShadow: '0 8px 24px rgba(0,0,0,.45)',
-    border: '1px solid rgba(255,255,255,.08)',
-    color: '#EAEAEA',
+  background: 'var(--surface)',
+  boxShadow: '0 8px 24px rgba(0,0,0,.45)',
+  border: '1px solid var(--surface-border)',
+  color: 'var(--surface-text)',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
     fontFamily: 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto',
@@ -50,10 +50,10 @@ export default function HeatmapControls({
     width: 'min(92vw, 320px)',
     padding: '12px',
     borderRadius: 12,
-    background: "rgba(10,12,24,.6)",
-    boxShadow: "0 8px 24px rgba(0,0,0,.35)",
-    border: "1px solid rgba(255,255,255,.08)",
-    color: "#EAEAEA",
+  background: 'var(--surface)',
+  boxShadow: '0 8px 24px rgba(0,0,0,.35)',
+  border: '1px solid var(--surface-border)',
+  color: 'var(--surface-text)',
     backdropFilter: "blur(10px)",
     WebkitBackdropFilter: "blur(10px)",
     fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
@@ -62,7 +62,7 @@ export default function HeatmapControls({
   const row = { display: "grid", gridTemplateColumns: "96px 1fr 56px", alignItems: "center", gap: 12, marginBottom: 12 };
   const label = { fontSize: 12, letterSpacing: .2, opacity: .9 };
   const val = { fontSize: 12, textAlign: "right", opacity: .9 };
-  const slider = { width: "100%", height: 44, accentColor: "#ff6aa8", cursor: "pointer", touchAction: 'none', WebkitAppearance:'none', background:'transparent' };
+  const slider = { width: '100%', height: 44, accentColor: 'var(--accent)', cursor: 'pointer', touchAction: 'none', WebkitAppearance:'none', background:'transparent' };
   const toggleWrap = { display: "flex", alignItems: "center", gap: 10, marginTop: 6 };
 
   return (
@@ -89,7 +89,7 @@ export default function HeatmapControls({
             onClick={onHelp}
             title="Ver onboarding"
             aria-label="Abrir guía rápida"
-            style={{ background:'transparent', color:'#9fb4ff', border:'1px solid rgba(159,180,255,.35)', padding:'10px 12px', minWidth:44, minHeight:44, borderRadius:10, fontSize:14, cursor:'pointer' }}
+            style={{ background:'transparent', color:'var(--focus-ring)', border:'1px solid var(--btn-border)', padding:'10px 12px', minWidth:44, minHeight:44, borderRadius:10, fontSize:14, cursor:'pointer' }}
           >¿?</button>
           {isCompact && (
             <button
@@ -98,7 +98,7 @@ export default function HeatmapControls({
               aria-expanded={expanded}
               aria-controls="hudControlsBody"
               title={expanded? 'Colapsar controles' : 'Expandir controles'}
-              style={{ background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.25)', padding:'10px 12px', minWidth:44, minHeight:44, borderRadius:10, fontSize:14, cursor:'pointer' }}
+              style={{ background:'transparent', color:'var(--surface-text)', border:'1px solid var(--surface-border)', padding:'10px 12px', minWidth:44, minHeight:44, borderRadius:10, fontSize:14, cursor:'pointer' }}
             >{expanded? '▼' : '▲'}</button>
           )}
         </div>
@@ -108,7 +108,7 @@ export default function HeatmapControls({
         type="button"
         onClick={() => firstControlRef.current?.focus()}
         style={{
-          background:'transparent', color:'#9fb4ff', border:'1px dashed rgba(159,180,255,.35)',
+          background:'transparent', color:'var(--focus-ring)', border:'1px dashed var(--focus-ring)',
           padding:'4px 8px', borderRadius:8, fontSize:12, cursor:'pointer', marginBottom:8
         }}
         aria-label="Enfocar el primer control del panel"

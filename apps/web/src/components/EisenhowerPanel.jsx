@@ -905,18 +905,18 @@ export default function EisenhowerPanel(){
   const weightBadgeStyle = {
     position:'absolute', left:6, bottom:6,
     padding:'2px 6px', borderRadius:6, fontSize:10,
-    background:'rgba(10,12,24,.65)', color:'#EAEAEA',
-    border:'1px solid rgba(255,255,255,.24)',
+    background:'var(--surface)', color:'var(--surface-text)',
+    border:'1px solid var(--surface-border)',
     cursor:'default'
   }
 
   const weightPickerStyle = {
     position:'absolute', right:4, bottom:28, display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:4,
-    background:'rgba(10,12,24,.85)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.25)',
+    background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)',
     padding:6, borderRadius:8, boxShadow:'0 8px 20px rgba(0,0,0,.35)', zIndex:2
   }
   const weightBtnStyle = {
-    minWidth:28, minHeight:28, borderRadius:6, border:'1px solid rgba(255,255,255,.22)', background:'transparent', color:'#EAEAEA', cursor:'pointer', fontWeight:700
+    minWidth:28, minHeight:28, borderRadius:6, border:'1px solid var(--surface-border)', background:'transparent', color:'var(--surface-text)', cursor:'pointer', fontWeight:700
   }
 
   // Close weight picker on click/touch outside
@@ -995,7 +995,7 @@ export default function EisenhowerPanel(){
 
   const labels = {
     position:'absolute', inset:0, pointerEvents:'none',
-    color:'rgba(234,234,234,.9)',
+  color:'var(--text)',
     textTransform:'uppercase',
     letterSpacing:.5,
     fontSize:12,
@@ -1006,8 +1006,8 @@ export default function EisenhowerPanel(){
 
   const labelBase = {
     padding:'6px 10px',
-    background:'rgba(10,12,24,.55)',
-    border:'1px solid rgba(255,255,255,.1)',
+  background:'var(--surface)',
+  border:'1px solid var(--surface-border)',
     borderRadius:8,
     backdropFilter:'blur(8px)',
     WebkitBackdropFilter:'blur(8px)',
@@ -1045,8 +1045,8 @@ export default function EisenhowerPanel(){
 
         /* Ping visual when a note is re-routed */
         @keyframes eh-ping-ring { from { transform: translate(-50%, -50%) scale(0.8); opacity: .6; } to { transform: translate(-50%, -50%) scale(1.35); opacity: 0; } }
-        @keyframes eh-ping-glow { from { box-shadow: 0 0 0 rgba(240,55,93,.6); } 50% { box-shadow: 0 0 18px rgba(240,55,93,.55); } to { box-shadow: 0 0 0 rgba(240,55,93,0); } }
-  .eh-note.ping::after { content:''; position:absolute; left:50%; top:50%; width:120px; height:120px; border-radius:10px; border:2px solid rgba(240,55,93,.75); transform: translate(-50%, -50%); animation: eh-ping-ring 480ms ease-out forwards; pointer-events:none; }
+    @keyframes eh-ping-glow { from { box-shadow: 0 0 0 var(--accent, rgba(240,55,93,.6)); } 50% { box-shadow: 0 0 18px var(--accent, rgba(240,55,93,.55)); } to { box-shadow: 0 0 0 rgba(240,55,93,0); } }
+  .eh-note.ping::after { content:''; position:absolute; left:50%; top:50%; width:120px; height:120px; border-radius:10px; border:2px solid var(--accent, rgba(240,55,93,.75)); transform: translate(-50%, -50%); animation: eh-ping-ring 480ms ease-out forwards; pointer-events:none; }
         .eh-note.ping { animation: eh-ping-glow 480ms ease-out; }
       `}</style>
 
@@ -1171,7 +1171,7 @@ export default function EisenhowerPanel(){
                             onPointerDown={(e)=>{ e.stopPropagation(); /* avoid parent drag */ }}
                             onClick={(e)=>{ e.stopPropagation(); setComposer({ id:n.id, col:n.col, row:n.row, text:n.text }) }}
                             style={{
-                              background:'rgba(10,12,24,.7)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.3)',
+                              background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)',
                               borderRadius:4, padding:'2px 6px', fontSize:10, cursor:'pointer', userSelect:'none'
                             }}
                           >
@@ -1184,7 +1184,7 @@ export default function EisenhowerPanel(){
                             onPointerDown={(e)=>{ e.stopPropagation() }}
                             onClick={(e)=>{ e.stopPropagation(); setLastWeightTrigger(e.currentTarget); setWeightFor(prev => prev===n.id ? null : n.id) }}
                             style={{
-                              background:'rgba(10,12,24,.7)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.3)',
+                              background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)',
                               borderRadius:4, padding:'2px 6px', fontSize:10, cursor:'pointer', userSelect:'none'
                             }}
                           >
@@ -1282,7 +1282,7 @@ export default function EisenhowerPanel(){
         {/* Filters + Zoom controls */}
         <div style={{position:'absolute', top:8, right:8, display:'flex', gap:12, alignItems:'stretch', zIndex:6}}>
           {/* Filter bar */}
-          <form aria-label="Filtros" onSubmit={(e)=> e.preventDefault()} style={{display:'flex', gap:8, alignItems:'center', background:'rgba(10,12,24,.6)', border:'1px solid rgba(255,255,255,.15)', padding:'8px', borderRadius:12, backdropFilter:'blur(8px)'}}>
+          <form aria-label="Filtros" onSubmit={(e)=> e.preventDefault()} style={{display:'flex', gap:8, alignItems:'center', background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)', padding:'8px', borderRadius:12, backdropFilter:'blur(8px)'}}>
             <div style={{position:'relative'}}>
               <Search size={16} aria-hidden="true" style={{position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', opacity:.8}} />
               <input
@@ -1290,18 +1290,18 @@ export default function EisenhowerPanel(){
                 onChange={(e)=> setSearchText(e.target.value.slice(0, 64))}
                 placeholder="Buscar texto..."
                 aria-label="Buscar por texto"
-                style={{padding:'8px 10px 8px 28px', borderRadius:8, border:'1px solid rgba(255,255,255,.18)', background:'rgba(10,12,24,.6)', color:'#EAEAEA', minWidth:160}}
+                style={{padding:'8px 10px 8px 28px', borderRadius:8, border:'1px solid var(--surface-border)', background:'var(--surface)', color:'var(--surface-text)', minWidth:160}}
               />
             </div>
-            <label style={{display:'flex', alignItems:'center', gap:6, color:'#EAEAEA', fontSize:12}}>
+            <label style={{display:'flex', alignItems:'center', gap:6, color:'var(--surface-text)', fontSize:12}}>
               Prioridad
-              <input type="number" min={1} max={10} value={prioMin} onChange={(e)=> setPrioMin(Math.max(1, Math.min(10, Number(e.target.value)||1)))} aria-label="Prioridad mínima" style={{width:52, padding:'6px 8px', borderRadius:8, border:'1px solid rgba(255,255,255,.18)', background:'rgba(10,12,24,.6)', color:'#EAEAEA'}} />
+              <input type="number" min={1} max={10} value={prioMin} onChange={(e)=> setPrioMin(Math.max(1, Math.min(10, Number(e.target.value)||1)))} aria-label="Prioridad mínima" style={{width:52, padding:'6px 8px', borderRadius:8, border:'1px solid var(--surface-border)', background:'var(--surface)', color:'var(--surface-text)'}} />
               –
-              <input type="number" min={1} max={10} value={prioMax} onChange={(e)=> setPrioMax(Math.max(1, Math.min(10, Number(e.target.value)||10)))} aria-label="Prioridad máxima" style={{width:52, padding:'6px 8px', borderRadius:8, border:'1px solid rgba(255,255,255,.18)', background:'rgba(10,12,24,.6)', color:'#EAEAEA'}} />
+              <input type="number" min={1} max={10} value={prioMax} onChange={(e)=> setPrioMax(Math.max(1, Math.min(10, Number(e.target.value)||10)))} aria-label="Prioridad máxima" style={{width:52, padding:'6px 8px', borderRadius:8, border:'1px solid var(--surface-border)', background:'var(--surface)', color:'var(--surface-text)'}} />
             </label>
             <fieldset style={{display:'flex', gap:6, border:'none', margin:0, padding:0}} aria-label="Cuadrantes">
               {['TL','TR','BL','BR'].map(q => (
-                <label key={q} style={{display:'flex', alignItems:'center', gap:4, background: quad[q] ? 'rgba(240,55,93,.35)' : 'transparent', border:'1px solid rgba(255,255,255,.18)', padding:'6px 8px', borderRadius:8, color:'#EAEAEA', cursor:'pointer'}}>
+                <label key={q} style={{display:'flex', alignItems:'center', gap:4, background: quad[q] ? 'rgba(240,55,93,.35)' : 'transparent', border:'1px solid var(--surface-border)', padding:'6px 8px', borderRadius:8, color:'var(--surface-text)', cursor:'pointer'}}>
                   <input type="checkbox" checked={!!quad[q]} onChange={(e)=> setQuad(prev=> ({ ...prev, [q]: e.target.checked }))} />
                   {q}
                 </label>
@@ -1309,26 +1309,26 @@ export default function EisenhowerPanel(){
             </fieldset>
             <button type="button" onClick={()=>{ setSearchText(''); setPrioMin(1); setPrioMax(10); setQuad({TL:true,TR:true,BL:true,BR:true}) }}
               aria-label="Limpiar filtros" title="Limpiar filtros"
-              style={{background:'transparent', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.18)', padding:'6px 10px', borderRadius:8, cursor:'pointer'}}>Limpiar</button>
+              style={{background:'transparent', color:'var(--surface-text)', border:'1px solid var(--surface-border)', padding:'6px 10px', borderRadius:8, cursor:'pointer'}}>Limpiar</button>
           </form>
 
           {/* Zoom controls and capacity */}
           <div style={{display:'flex', gap:8, alignItems:'center'}}>
-            <span aria-live="polite" style={{fontSize:11, opacity:.8}}>Notas: {notes.length} / ~{capacity}</span>
+            <span aria-live="polite" style={{fontSize:11, opacity:.8, color:'var(--surface-text)'}}>Notas: {notes.length} / ~{capacity}</span>
             <button aria-label="Reordenar denso" title="Reordenar denso" onClick={repackDense}
-              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              style={{background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
               <RefreshCcw size={18} aria-hidden="true" />
             </button>
             <button aria-label="Zoom out" title="Zoom -" onClick={()=> setZoom(z=> Math.max(ZMIN, +(z - ZSTEP).toFixed(2)))}
-              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              style={{background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
               <ZoomOut size={18} aria-hidden="true" />
             </button>
             <button aria-label="Reset zoom" title="Reset" onClick={()=> setZoom(1)}
-              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:56, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              style={{background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)', padding:'8px 10px', minWidth:56, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
               {Math.round(zoom*100)}%
             </button>
             <button aria-label="Zoom to fit content" title="Ajustar al contenido" onClick={zoomToFit}
-              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              style={{background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)', padding:'8px 10px', minWidth:40, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
               <Home size={18} aria-hidden="true" />
             </button>
             <button aria-label="Zoom in" title="Zoom +" onClick={()=> setZoom(z=> Math.min(ZMAX, +(z + ZSTEP).toFixed(2)))}
@@ -1337,7 +1337,7 @@ export default function EisenhowerPanel(){
             </button>
             {/* Help / Cheat-sheet toggle */}
             <button aria-label="Atajos de teclado (H)" title="Atajos (H)" onClick={()=> setShowCheats(v=> !v)}
-              style={{background:'rgba(10,12,24,.6)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.15)', padding:'8px 10px', minWidth:36, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
+              style={{background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)', padding:'8px 10px', minWidth:36, minHeight:40, borderRadius:10, fontWeight:800, cursor:'pointer'}}>
               ?
             </button>
           </div>
@@ -1352,8 +1352,8 @@ export default function EisenhowerPanel(){
               placeholder="Añadir tarea rápida..."
               maxLength={MAX_TEXT}
               style={{
-                width:280, padding:'10px 14px', borderRadius:12, border:'1px solid rgba(255,255,255,.2)',
-                background:'rgba(10,12,24,.75)', color:'#EAEAEA', outline:'none',
+                width:280, padding:'10px 14px', borderRadius:12, border:'1px solid var(--surface-border)',
+                background:'var(--surface)', color:'var(--surface-text)', outline:'none',
                 backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)',
                 boxShadow:'0 8px 24px rgba(0,0,0,.3)'
               }}

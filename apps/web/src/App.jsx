@@ -113,21 +113,37 @@ export default function App(){
           --grid-medium: rgba(255,255,255,.13);
           --grid-major: rgba(255,255,255,.16);
           --keepout: rgba(240,55,93,.08);
+          /* Standardized aliases */
+          --surface: var(--panel-bg);
+          --surface-border: var(--panel-border);
+          --surface-text: var(--text);
           /* Accent */
           --primary: #F0375D;
           --primary-hover: #FF5C7A;
           --primary-pressed: #D22E51;
           --on-primary: #12131A;
           --focus: #8AB4FF;
+          /* Accent aliases */
+          --accent: var(--primary);
+          --accent-hover: var(--primary-hover);
+          --accent-pressed: var(--primary-pressed);
+          --on-accent: var(--on-primary);
+          --focus-ring: var(--focus);
           /* State */
           --success: #1DB954;
           --warning: #FFB020;
           --danger:  #F44336;
+          /* State aliases */
+          --ok: var(--success);
           --btn-border: rgba(127,127,127,.25);
           --btn-border-hover: rgba(255,255,255,.35);
           --btn-border-active: rgba(255,255,255,.5);
           --elev-hover: 0 6px 18px rgba(0,0,0,.28);
           --elev-active: 0 3px 10px rgba(0,0,0,.36);
+          /* Elevation aliases */
+          --elevation-0: none;
+          --elevation-1: var(--elev-hover);
+          --elevation-2: var(--elev-active);
           /* Accessibility tokens */
           --placeholder: rgba(234,234,234,.72);
           --btn-disabled-bg: #2a2f3a;
@@ -150,21 +166,37 @@ export default function App(){
           --grid-medium: rgba(0,0,0,.12);
           --grid-major: rgba(0,0,0,.16);
           --keepout: rgba(240,55,93,.10);
+          /* Standardized aliases */
+          --surface: var(--panel-bg);
+          --surface-border: var(--panel-border);
+          --surface-text: var(--text);
           /* Accent */
           --primary: #F0375D;
           --primary-hover: #FF5C7A;
           --primary-pressed: #D22E51;
           --on-primary: #12131A;
           --focus: #A1C3FF;
+          /* Accent aliases */
+          --accent: var(--primary);
+          --accent-hover: var(--primary-hover);
+          --accent-pressed: var(--primary-pressed);
+          --on-accent: var(--on-primary);
+          --focus-ring: var(--focus);
           /* State */
           --success: #1DB954;
           --warning: #FFB020;
           --danger:  #F44336;
+          /* State aliases */
+          --ok: var(--success);
           --btn-border: rgba(127,127,127,.25);
           --btn-border-hover: rgba(0,0,0,.18);
           --btn-border-active: rgba(0,0,0,.24);
           --elev-hover: 0 6px 18px rgba(0,0,0,.14);
           --elev-active: 0 3px 10px rgba(0,0,0,.20);
+          /* Elevation aliases */
+          --elevation-0: none;
+          --elevation-1: var(--elev-hover);
+          --elevation-2: var(--elev-active);
           /* Accessibility tokens */
           --placeholder: rgba(18,19,26,.55);
           --btn-disabled-bg: #e6e8ef;
@@ -176,21 +208,21 @@ export default function App(){
         .skip-link { position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
         .skip-link:focus { left: max(10px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); width:auto; height:auto; padding:8px 12px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius:8px; color: var(--text); z-index: 200; }
 
-        /* Global interactive states */
+        /* Global interactive states (consistent across themes using tokens) */
         button, [role='tab'], input, select, textarea, a {
           transition: box-shadow .15s ease, border-color .15s ease, background-color .15s ease, transform .06s ease;
         }
         button:hover, [role='tab']:hover, a:hover {
-          box-shadow: var(--elev-hover) !important;
+          box-shadow: var(--elevation-1) !important;
           border-color: var(--btn-border-hover) !important;
         }
         button:active, [role='tab']:active, a:active {
-          box-shadow: var(--elev-active) !important;
+          box-shadow: var(--elevation-2) !important;
           border-color: var(--btn-border-active) !important;
           transform: translateY(1px);
         }
         button:focus-visible, [role='tab']:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
-          outline: 2px solid var(--focus);
+          outline: 2px solid var(--focus-ring);
           outline-offset: 2px;
         }
 
@@ -251,7 +283,7 @@ export default function App(){
               style={{
                 background: view==='map' ? 'var(--primary)' : 'transparent',
                 color: view==='map' ? 'var(--on-primary)' : 'var(--text)',
-                border:'1px solid rgba(127,127,127,.25)', borderRadius:10,
+                border:'1px solid var(--surface-border)', borderRadius:10,
                 padding:'8px 12px', minHeight:36, minWidth:44, fontWeight:700, cursor:'pointer'
               }}
             >Mapa</button>
@@ -264,7 +296,7 @@ export default function App(){
               style={{
                 background: view==='matrix' ? 'var(--primary)' : 'transparent',
                 color: view==='matrix' ? 'var(--on-primary)' : 'var(--text)',
-                border:'1px solid rgba(127,127,127,.25)', borderRadius:10,
+                  border:'1px solid var(--surface-border)', borderRadius:10,
                 padding:'8px 12px', minHeight:36, minWidth:44, fontWeight:700, cursor:'pointer'
               }}
             >Matriz</button>
@@ -278,7 +310,7 @@ export default function App(){
               aria-label="Ayuda y atajos"
               title="Ayuda y atajos"
               style={{
-                background:'transparent', color:'var(--text)', border:'1px solid rgba(127,127,127,.25)',
+                background:'transparent', color:'var(--text)', border:'1px solid var(--surface-border)',
                 padding:'8px 10px', minHeight:36, minWidth:36, borderRadius:10, fontWeight:800, cursor:'pointer'
               }}
             >
@@ -293,7 +325,7 @@ export default function App(){
               style={{
                 background: 'transparent',
                 color: 'var(--text)',
-                border:'1px solid rgba(127,127,127,.25)',
+                border:'1px solid var(--surface-border)',
                 padding:'8px 10px', minHeight:36, minWidth:44, borderRadius:10,
                 fontWeight:700, cursor:'pointer', lineHeight:1
               }}
@@ -304,8 +336,7 @@ export default function App(){
               aria-label="Menú"
               title="Menú"
               style={{
-                background:'transparent', color:'var(--text)', border:'1px solid rgba(127,127,127,.25)',
-                padding:'8px 10px', minHeight:36, minWidth:36, borderRadius:10, fontWeight:800, cursor:'pointer'
+                background:'transparent', color:'var(--text)', border:'1px solid var(--surface-border)'
               }}
             >
               <MoreHorizontal size={18} aria-hidden="true" />
@@ -364,8 +395,7 @@ export default function App(){
           position:'absolute',
           left: 'max(16px, env(safe-area-inset-left))',
           bottom: 'max(16px, env(safe-area-inset-bottom))',
-          background:'rgba(10,12,24,.6)', border:'1px solid rgba(255,255,255,.1)', color:'#EAEAEA',
-          padding:'8px 12px', borderRadius:8, fontSize:12, backdropFilter:'blur(8px)'
+          background:'var(--surface)', border:'1px solid var(--surface-border)', color:'var(--surface-text)'
         }}>Demo en progreso · {demoLeft}s  —  Puedes arrastrar nodos y ajustar el heatmap</div>
       )}
 

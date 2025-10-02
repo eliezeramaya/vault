@@ -25,6 +25,22 @@ npm run preview -- --port 4173 --strictPort   # http://localhost:4173/vault/
 - Accesibilidad: Welcome con focus trap, live region, landmarks, skip link, focus visible.
 - Theming light/dark con variables CSS; PWA (service worker + manifest) y 404.html para SPA.
 
+## Tokens de color (estables)
+Disponibles en ambos temas (claro/oscuro) como variables CSS:
+- Superficies: `--surface`, `--surface-border`, `--surface-text`
+- Elevación: `--elevation-0`, `--elevation-1`, `--elevation-2`
+- Acento: `--accent`, `--accent-hover`, `--accent-pressed`, `--on-accent`, `--focus-ring`
+- Estado: `--ok` (éxito), `--warning`, `--danger`
+
+Ejemplos de uso:
+```css
+.btn-primary { background: var(--accent); color: var(--on-accent); border: none; }
+.btn-primary:hover { background: var(--accent-hover); box-shadow: var(--elevation-1); }
+.btn-primary:active { background: var(--accent-pressed); box-shadow: var(--elevation-2); }
+.card { background: var(--surface); color: var(--surface-text); border: 1px solid var(--surface-border); }
+.focus-ring:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+```
+
 ## Estructura principal
 - `src/App.jsx` — App shell, temas y navegación.
 - `src/components/EisenhowerPanel.jsx` — Lógica/visual de la matriz y notas.

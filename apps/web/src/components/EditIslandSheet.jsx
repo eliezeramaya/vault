@@ -27,14 +27,14 @@ export default function EditIslandSheet({ open, node, onClose, onSave, onConnect
   const sheet = {
     position:'absolute', left:'max(12px, env(safe-area-inset-left))', right:'max(12px, env(safe-area-inset-right))',
     bottom:'max(12px, env(safe-area-inset-bottom))', borderRadius:16,
-    background:'rgba(10,12,24,.92)', color:'#EAEAEA', border:'1px solid rgba(255,255,255,.12)',
+    background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)',
     boxShadow:'0 12px 40px rgba(0,0,0,.45)', padding:'14px', fontFamily:'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto'
   }
   const row = { display:'grid', gap:10, marginBottom:10 }
   const label = { fontSize:12, opacity:.9 }
-  const input = { width:'100%', padding:'12px', borderRadius:10, border:'1px solid rgba(255,255,255,.14)', background:'rgba(255,255,255,.04)', color:'#EAEAEA' }
+  const input = { width:'100%', padding:'12px', borderRadius:10, border:'1px solid var(--surface-border)', background:'var(--surface)', color:'var(--surface-text)' }
   const actions = { display:'flex', gap:12, justifyContent:'space-between', marginTop:8, alignItems:'center' }
-  const btn = (primary)=> ({ padding:'12px 16px', minWidth:44, minHeight:44, borderRadius:10, cursor:'pointer', border: primary?'none':'1px solid rgba(255,255,255,.25)', background: primary?'#F0375D':'transparent', color: primary?'#0a0a15':'#EAEAEA', fontWeight:700 })
+  const btn = (primary)=> ({ padding:'12px 16px', minWidth:44, minHeight:44, borderRadius:10, cursor:'pointer', border: primary?'none':'1px solid var(--surface-border)', background: primary?'var(--primary)':'transparent', color: primary?'var(--on-primary)':'var(--surface-text)', fontWeight:700 })
 
   const zones = ['','Américas','Europa/África','Asia/Oceanía','Pacífico','Atlántico Sur']
 
@@ -43,7 +43,7 @@ export default function EditIslandSheet({ open, node, onClose, onSave, onConnect
       <div ref={sheetRef} tabIndex={-1} style={sheet}>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
           <div id="editTitle" style={{fontWeight:800, letterSpacing:.3}}>Editar isla</div>
-          <button type="button" onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{minWidth:44, minHeight:44, padding:'10px 12px', borderRadius:10, border:'1px solid rgba(255,255,255,.25)', background:'transparent', color:'#EAEAEA', cursor:'pointer'}}>
+          <button type="button" onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{minWidth:44, minHeight:44, padding:'10px 12px', borderRadius:10, border:'1px solid var(--surface-border)', background:'transparent', color:'var(--surface-text)', cursor:'pointer'}}>
             <X size={18} aria-hidden="true" />
           </button>
         </div>

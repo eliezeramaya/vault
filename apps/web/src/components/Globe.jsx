@@ -793,7 +793,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
             Object.assign(chip.style, {
               position: 'absolute', transform: 'translate(-50%, -50%)', width: '44px', height: '44px',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', letterSpacing: '.2px',
-              color: '#EAEAEA', background: 'rgba(10,12,24,.72)', border: '1px solid rgba(255,255,255,.10)', borderRadius: '50%',
+              color: 'var(--note-text, var(--text))', background: 'var(--note-bg)', border: '1px solid var(--note-border)', borderRadius: '50%',
               boxShadow: '0 6px 20px rgba(0,0,0,.35)', pointerEvents: 'auto', whiteSpace: 'nowrap', zIndex: 7, cursor: 'grab', userSelect: 'none', touchAction: 'none'
             });
             // attach listeners with connect-mode support
