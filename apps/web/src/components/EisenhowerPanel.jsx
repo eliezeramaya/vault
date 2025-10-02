@@ -1085,13 +1085,7 @@ export default function EisenhowerPanel(){
             {/* Grid layer: click to add note */}
             <div ref={gridRef} className="eh-grid" style={{...grid, width: '100%', height: '100%'}} role="grid" aria-rowcount={ROWS} aria-colcount={COLS} onClick={onGridClick} onDoubleClick={onGridDoubleClick} />
 
-              {/* Keep-out band (beneath axis lines) */}
-              <div style={{...keepOutLayer, width:'100%', height:'100%'}} aria-hidden>
-                {/* Vertical band centered on Y axis */}
-                <div style={{ position:'absolute', top:0, bottom:0, left:`calc(50% - ${keepOut.wPct/2}%)`, width:`${keepOut.wPct}%`, background: 'var(--keepout)' }} />
-                {/* Horizontal band centered on X axis */}
-                <div style={{ position:'absolute', left:0, right:0, top:`calc(50% - ${keepOut.hPct/2}%)`, height:`${keepOut.hPct}%`, background: 'var(--keepout)' }} />
-              </div>
+              {/* Keep-out bands (visual) removed per request; logic still enforced via withinAxisBuffer */}
 
             {/* Axis gradient overlays (beneath notes) */}
             <div style={{...axisLayer, width: '100%', height: '100%'}} aria-hidden>

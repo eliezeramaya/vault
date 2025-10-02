@@ -1,34 +1,40 @@
-# Idea Sphere App (V2)
+# Web App — Matriz de Eisenhower (SPA/PWA)
 
-Módulo base para un **mapa de ideas esférico** con:
-- Islas **flotando** sobre la superficie
-- Rutas curvadas tipo “vuelo”
-- **Heatmap** GPU (ROJO–ROSA–AZUL) con blur separable
-- Panel HUD para **Opacidad / Sigma / Radio / Reverse**
+Aplicación React + Vite con una matriz de Eisenhower “liquid‑glass”, accesible y con persistencia local.
 
 ## Requisitos
 - Node 18+
-- Navegador con WebGL2
+- Navegador moderno
 
 ## Instalar y ejecutar
 ```bash
-npm install
-npm run dev
-```
-Abre `http://localhost:3000/`.
+npm ci
+npm run dev      # http://localhost:3000/
 
-## Estructura
-- `src/components/Globe.jsx` → escena principal (Three.js), islas, arco demo y heatmap
-- `src/components/HeatmapControls.jsx` → HUD de controles
-- `src/lib/heatmap/HeatmapPass.js` → splatting + blur a textura UV
-- `src/lib/heatmap/HeatmapLayer.js` → mezcla del heatmap con paleta **Azul→Rosa→Rojo**
-- `src/lib/spherical.js` → utilidades de coordenadas esféricas
-- `src/lib/arcs.js` → creación/animación de arcos elevados
-- `src/lib/labels.js` → labels MSDF (no usados en esta demo, listos para integrar)
+# Producción
+npm run build
+npm run preview -- --port 4173 --strictPort   # http://localhost:4173/vault/
+```
+
+## Características
+- 96×96 celdas virtuales; chips de 120px sin separación visual (GAP=0) y sin solapamientos.
+- Pan/zoom/zoom‑to‑fit; reencaminado con “ping” cuando hay colisión; keep‑out en ejes centrales (invisible).
+- Doble clic para crear y editar inline; entrada rápida inferior; “peso” (1–10) con teclado/click‑outside.
+- Filtros persistentes: texto (con resaltado), rango de prioridad y toggles por cuadrante.
+- Atajos: N/E/Del/Flechas/=/−/0 y ayuda (H/?).
+- Accesibilidad: Welcome con focus trap, live region, landmarks, skip link, focus visible.
+- Theming light/dark con variables CSS; PWA (service worker + manifest) y 404.html para SPA.
+
+## Estructura principal
+- `src/App.jsx` — App shell, temas y navegación.
+- `src/components/EisenhowerPanel.jsx` — Lógica/visual de la matriz y notas.
+- `src/components/Welcome.jsx` — Diálogo de bienvenida accesible.
+- `src/components/HeatmapControls.jsx` — HUD (legacy del modo “globo”).
+- `src/tests` — Playwright E2E (atajos, no‑overlap, live region).
+
+## Despliegue (GitHub Pages)
+- Configurado con `base: '/vault/'` y `start_url/scope` en el manifest.
+- Workflow `pages.yml` publica `dist` y añade `404.html` como fallback SPA.
 
 ## Notas
-- La demo crea 3 islas de ejemplo y un arco animado A→C.
-- Arrastra una isla para reposicionarla; el heatmap se actualiza en vivo.
-- Ajusta el heatmap con el panel: Opacidad, Sigma (blur), Radio del splat y Reverse (invierte paleta).
-
-> Próximos pasos sugeridos: integrar Supabase, IA de conexiones, y VR WebXR.
+- Las antiguas vistas 3D (globo/heatmap) siguen en el código para referencia; la vista por defecto es la matriz.

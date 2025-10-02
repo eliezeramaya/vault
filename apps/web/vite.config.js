@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  base: '/vault/',              // � necesario para servir en Pages
+  base: '/vault/',              // Es necesario para servir en Pages (GitHub Pages)
   plugins: [
     react(),
     VitePWA({

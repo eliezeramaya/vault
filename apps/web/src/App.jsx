@@ -111,7 +111,7 @@ export default function App(){
           --axis-rgb: 255,255,255;
           --grid-minor: rgba(255,255,255,.06);
           --grid-medium: rgba(255,255,255,.13);
-          --grid-major: rgba(255,255,255,.22);
+          --grid-major: rgba(255,255,255,.16);
           --keepout: rgba(240,55,93,.08);
           /* Accent */
           --primary: #F0375D;
@@ -148,7 +148,7 @@ export default function App(){
           --axis-rgb: 0,0,0;
           --grid-minor: rgba(0,0,0,.06);
           --grid-medium: rgba(0,0,0,.12);
-          --grid-major: rgba(0,0,0,.20);
+          --grid-major: rgba(0,0,0,.16);
           --keepout: rgba(240,55,93,.10);
           /* Accent */
           --primary: #F0375D;
