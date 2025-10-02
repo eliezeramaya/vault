@@ -20,3 +20,9 @@ pubspec.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# Test artifacts
+test-results/
+
+# Archives
+*.zip
