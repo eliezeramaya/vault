@@ -6,6 +6,9 @@ import Welcome from './components/Welcome'
 import Onboarding from './components/Onboarding'
 import Preloader from './components/Preloader'
 import AddIslandSheet from './components/AddIslandSheet'
+import NavRail from './components/NavRail'
+import HomePanel from './components/HomePanel'
+import SettingsPanel from './components/SettingsPanel'
 
 export default function App(){
   const [theme, setTheme] = useState('dark') // 'dark' | 'light'
@@ -17,7 +20,7 @@ export default function App(){
   const [loading, setLoading] = useState(true)
   const globeApiRef = useRef(null)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [view, setView] = useState('map') // 'map' | 'matrix'
+  const [view, setView] = useState('map') // 'home' | 'map' | 'matrix' | 'settings'
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   const menuBtnRef = useRef(null)
@@ -46,7 +49,7 @@ export default function App(){
   useEffect(()=>{
     try{
       const savedView = localStorage.getItem('view')
-      if (savedView === 'map' || savedView === 'matrix') setView(savedView)
+      if (savedView === 'map' || savedView === 'matrix' || savedView === 'home' || savedView === 'settings') setView(savedView)
     }catch{}
   },[])
 
@@ -139,6 +142,9 @@ export default function App(){
 
   return (
     <div className="app" style={{position:'relative'}}>
+      {/* Persistent Navigation Rail / Bottom Bar */}
+      <NavRail value={view} onChange={setView} />
+
       {/* Global theme hints */}
       <style>{`
         :root { color-scheme: light dark; }
@@ -296,7 +302,7 @@ export default function App(){
         </filter>
       </svg>
 
-      {/* Top navigation bar (persistent) */}
+      {/* Top navigation bar (kept for brand and quick actions) */}
       {/* Skip link */}
       <a href="#main" className="skip-link">Saltar al contenido</a>
 
@@ -323,6 +329,19 @@ export default function App(){
           {/* Tabs */}
           <nav role="tablist" aria-label="Vistas" style={{display:'flex', gap:6, marginLeft:16}}>
             <button
+              id="tab-home"
+              role="tab"
+              aria-selected={view==='home'}
+              aria-controls="panel-home"
+              onClick={()=> setView('home')}
+              style={{
+                background: view==='home' ? 'var(--primary)' : 'transparent',
+                color: view==='home' ? 'var(--on-primary)' : 'var(--text)',
+                border:'1px solid var(--surface-border)', borderRadius:10,
+                padding:'8px 12px', minHeight:36, minWidth:44, fontWeight:700, cursor:'pointer'
+              }}
+            >Inicio</button>
+            <button
               id="tab-map"
               role="tab"
               aria-selected={view==='map'}
@@ -348,6 +367,19 @@ export default function App(){
                 padding:'8px 12px', minHeight:36, minWidth:44, fontWeight:700, cursor:'pointer'
               }}
             >Matriz</button>
+            <button
+              id="tab-settings"
+              role="tab"
+              aria-selected={view==='settings'}
+              aria-controls="panel-settings"
+              onClick={()=> setView('settings')}
+              style={{
+                background: view==='settings' ? 'var(--primary)' : 'transparent',
+                color: view==='settings' ? 'var(--on-primary)' : 'var(--text)',
+                border:'1px solid var(--surface-border)', borderRadius:10,
+                padding:'8px 12px', minHeight:36, minWidth:44, fontWeight:700, cursor:'pointer'
+              }}
+            >Ajustes</button>
           </nav>
 
           <div style={{marginLeft:'auto', display:'flex', gap:8, alignItems:'center'}}>
@@ -449,20 +481,34 @@ export default function App(){
 
       {/* Main content area with tabpanels */}
       <main id="main" role="main" style={{position:'relative'}}>
-        {/* Toggle between Map (Globe) and Eisenhower Matrix as ARIA tabpanels */}
+        {/* Home */}
+        <div role="tabpanel" id="panel-home" aria-labelledby="tab-home" hidden={view!=='home'}>
+          {view==='home' && <HomePanel />}
+        </div>
+
+        {/* Map */}
         <div role="tabpanel" id="panel-map" aria-labelledby="tab-map" hidden={view!=='map'}>
           {view==='map' && (
             <Globe onHelp={()=>setShowOb(true)} onReady={handleGlobeReady} onApi={(api)=> (globeApiRef.current = api)} />
           )}
         </div>
+
+        {/* Matrix */}
         <div role="tabpanel" id="panel-matrix" aria-labelledby="tab-matrix" hidden={view!=='matrix'}>
           {view==='matrix' && <EisenhowerPanel />}
+        </div>
+
+        {/* Settings */}
+        <div role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" hidden={view!=='settings'}>
+          {view==='settings' && (
+            <SettingsPanel theme={theme} onThemeToggle={()=> setTheme(t=> t==='dark' ? 'light' : 'dark')} />
+          )}
         </div>
       </main>
 
       <Onboarding open={showOb} onClose={()=>setShowOb(false)} />
       <Preloader progress={loadPct} visible={loading && view==='map'} />
-      {/* FAB */}
+      {/* FAB visible only on map */}
       {view === 'map' && (
         <>
           <button
