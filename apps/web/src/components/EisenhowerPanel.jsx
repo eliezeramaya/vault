@@ -718,16 +718,22 @@ export default function EisenhowerPanel(){
   }
 
   const wrap = {
-    position:'absolute', inset:0, zIndex:10,
+    position:'relative', // changed from absolute to allow document flow sizing
+    minHeight:'calc(100vh - 140px)', // fallback height; refined below with responsive panel
     display:'grid', placeItems:'center',
     background:'var(--bg-wrap)',
     color:'var(--text)',
-    fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, \'Liberation Mono\', monospace'
+    fontFamily:'Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, \'Liberation Mono\', monospace',
+    padding:'12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left))'
   }
 
   const panel = {
     position:'relative',
-    width:'min(90vh, 92vw)',
+    // Prefer square up to available viewport; on narrow screens, expand height to fit
+    width:'min(92vw, 92vh)',
+    maxWidth:'min(980px, 95vw)',
+    // On small screens, let height breathe more than width
+    height:'auto',
     aspectRatio:'1 / 1',
     borderRadius:20,
     padding:16,
@@ -1023,34 +1029,15 @@ export default function EisenhowerPanel(){
 
   return (
     <div style={wrap} role="region" aria-label="Matriz de Eisenhower">
-      {/* Local styles for grid lines overlays and quadrant axes */}
+      {/* Local styles */}
       <style>{`
-        .eh-grid::before, .eh-grid::after { content:''; position:absolute; pointer-events:none; }
-        /* Vertical repeating lines (fine) */
-        .eh-grid::before { inset:0; background:
-          repeating-linear-gradient(to right,
-            ${minor} 0, ${minor} 1px, transparent 1px, transparent calc(100%/${COLS})
-          ),
-          repeating-linear-gradient(to bottom,
-            ${minor} 0, ${minor} 1px, transparent 1px, transparent calc(100%/${ROWS})
-          );
-          opacity:.6;
+        @media (max-width: 768px){
+          /* On small screens, allow taller than wide and reduce radii/paddings a bit */
+          .eh-panel{ width: min(96vw, 96vh); border-radius: 16px; padding: 12px; }
         }
-        /* Central axes to emphasize quadrants */
-        .eh-grid::after { left:0; right:0; top:0; bottom:0; background:
-          linear-gradient(to right, transparent calc(50% - .5px), ${major} calc(50% - .5px), ${major} calc(50% + .5px), transparent calc(50% + .5px)),
-          linear-gradient(to bottom, transparent calc(50% - .5px), ${major} calc(50% - .5px), ${major} calc(50% + .5px), transparent calc(50% + .5px));
-          opacity:.8;
-        }
-
-        /* Ping visual when a note is re-routed */
-        @keyframes eh-ping-ring { from { transform: translate(-50%, -50%) scale(0.8); opacity: .6; } to { transform: translate(-50%, -50%) scale(1.35); opacity: 0; } }
-    @keyframes eh-ping-glow { from { box-shadow: 0 0 0 var(--accent, rgba(240,55,93,.6)); } 50% { box-shadow: 0 0 18px var(--accent, rgba(240,55,93,.55)); } to { box-shadow: 0 0 0 rgba(240,55,93,0); } }
-  .eh-note.ping::after { content:''; position:absolute; left:50%; top:50%; width:120px; height:120px; border-radius:10px; border:2px solid var(--accent, rgba(240,55,93,.75)); transform: translate(-50%, -50%); animation: eh-ping-ring 480ms ease-out forwards; pointer-events:none; }
-        .eh-note.ping { animation: eh-ping-glow 480ms ease-out; }
       `}</style>
 
-      <div style={panel} aria-label="Panel liquid glass">
+      <div className="eh-panel" style={panel} aria-label="Panel liquid glass">
         {/* Zoom/Pan stage wrapper (viewport) */}
         <div
           ref={stageWrapRef}
