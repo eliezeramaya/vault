@@ -33,6 +33,13 @@ export default defineConfig({
       }
     })
   ],
-  server: { port: 3000, open: true }
+  server: { port: 3000, open: true },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './vitest.setup.js',
+    include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
+    coverage: { reporter: ['text', 'html'], include: ['src/lib/**'] }
+  }
 })
 

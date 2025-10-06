@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
+import { useError } from '../contexts/ErrorContext';
 
 import HeatmapControls from './HeatmapControls';
 import EditIslandSheet from './EditIslandSheet';
@@ -12,7 +13,7 @@ const PLANE_HEIGHT = PLANE_WIDTH / 2;
 const LABEL_Z = 0.08; // altura leve sobre el plano para los chips (más alto para evitar Z-fighting)
 const ROTATION_SPEED = 0.0; // sin auto-rotación en modo plano
 
-const d2r = (d)=> (d*Math.PI)/180;
+// const d2r = (d)=> (d*Math.PI)/180; // not used in plane mode
 // Plano: mapear lat/lon a XY (equirectangular). Centro (0,0) en el centro del plano.
 const latLonToPlane = (latDeg, lonDeg, z = LABEL_Z) => {
   const x = (lonDeg / 180) * (PLANE_WIDTH / 2);
@@ -29,19 +30,13 @@ const latLonToUV = (latDeg, lonDeg) => ({
   u: (lonDeg + 180) / 360,
   v: (latDeg + 90) / 180
 });
-const greatCircleElevated = (a, b, baseRadius, lift = 0.18, segs = 128) => {
-  const va = a.clone().normalize(), vb = b.clone().normalize();
-  const pts = [];
-  for (let i=0;i<=segs;i++){
-    const t = i/segs;
-    const dir = va.clone().lerp(vb, t).normalize();
-    const elev = lift * Math.sin(Math.PI * t);
-    pts.push(dir.multiplyScalar(baseRadius + elev));
-  }
-  return pts;
-};
+// greatCircleElevated kept for future 3D mode (unused in current 2D plane)
 
-export default function Globe({ onHelp, onReady, onApi }) {
+export default function Globe({ onHelp, onReady, onApi, showControls = true }) {
+  // Always call hook unconditionally to respect Rules of Hooks
+  const { addError } = useError();
+  const addErrorRef = useRef(addError);
+  useEffect(()=>{ addErrorRef.current = addError }, [addError]);
   const mountRef = useRef(null);
   const labelsRef = useRef(null);
   const raycaster = useRef(new THREE.Raycaster());
@@ -87,13 +82,13 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
   const gridRef = useRef(null);
   // Camera orbit state (yaw/pitch in radians) and distance/target offset
   const yawRef = useRef(0); // horizontal angle
-  const pitchRef = useRef(0); // vertical angle
+  // const pitchRef = useRef(0); // vertical angle (unused in plane mode)
   const camDistRef = useRef(13);
   const targetOffsetRef = useRef(new THREE.Vector3(0,0,0));
   const [toast, setToast] = useState(false);
   const userInteractingRef = useRef(false);
   // Hover/selección
-  const [hoveredIdx, setHoveredIdx] = useState(-1);
+  const [, setHoveredIdx] = useState(-1);
   const [selectedIdx, setSelectedIdx] = useState(-1);
   const hoveredIdxRef = useRef(-1);
   const selectedIdxRef = useRef(-1);
@@ -117,7 +112,6 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
   const initialOpacityRef = useRef(0.85);
   const initialSigmaRef = useRef(28);
   const initialReverseRef = useRef(false);
-  const internalApiRef = useRef({});
 
   // Read CSS variables from the root to theme the map consistently
   function readCssVar(name, fallback) {
@@ -127,7 +121,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
       const s = (v || '').trim();
       return s || fallback;
     } catch {
-      return fallback;
+         return fallback; /* ignore theme application errors */
     }
   }
 
@@ -243,80 +237,9 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
       });
     }
 
-    function deleteNode(idx){
-      const n = nodesRef.current[idx];
-      if (!n) return;
-      // Remove DOM chip
-      if (n.el && n.el.parentNode) n.el.parentNode.removeChild(n.el);
-      // Remove shadow
-      if (n.shadow && n.shadow.parent) n.shadow.parent.remove(n.shadow);
-      // Remove arcs touching idx
-      const keep = [];
-      arcsRef.current.forEach(obj => {
-        if (obj.aIdx === idx || obj.bIdx === idx) {
-          if (obj.line && obj.line.parent) obj.line.parent.remove(obj.line);
-          obj.line.geometry.dispose();
-        } else {
-          keep.push(obj);
-        }
-      });
-      arcsRef.current = keep;
-      // Remove node and reindex
-      nodesRef.current.splice(idx, 1);
-      // Fix indices on chips and arcs
-      nodesRef.current.forEach((node, i) => {
-        if (node.el) node.el.setAttribute('data-node-index', String(i));
-      });
-      arcsRef.current = arcsRef.current.map(o => ({
-        aIdx: o.aIdx > idx ? o.aIdx - 1 : o.aIdx,
-        bIdx: o.bIdx > idx ? o.bIdx - 1 : o.bIdx,
-        line: o.line
-      }));
-      setSelectedIdx(-1); selectedIdxRef.current = -1;
-      refreshHeat();
-    }
+    // helpers removed if unused to satisfy linter
 
-    function duplicateNode(idx){
-      const src = nodesRef.current[idx]; if (!src) return;
-      const node = { id: src.id, lat: src.lat, lon: Math.max(-180, Math.min(180, src.lon + 6)), priority: src.priority };
-      const labelLayerEl = labelsRef.current;
-      if (labelLayerEl) {
-        const newIdx = nodesRef.current.length;
-        const chip = document.createElement('div');
-        chip.textContent = chipSymbol(node.id);
-        chip.setAttribute('data-node-index', String(newIdx));
-        chip.title = node.id;
-        Object.assign(chip.style, {
-          position: 'absolute', transform: 'translate(-50%, -50%)', width: '44px', height: '44px',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', letterSpacing: '.2px',
-          color: 'var(--note-text, var(--text))', background: 'var(--note-bg)', border: '1px solid var(--note-border)', borderRadius: '50%',
-          boxShadow: '0 6px 20px rgba(0,0,0,.35)', pointerEvents: 'auto', whiteSpace: 'nowrap', zIndex: 7, cursor: 'grab', userSelect: 'none', touchAction: 'none'
-        });
-        attachChipListeners(chip, newIdx);
-        labelLayerEl.appendChild(chip);
-        const circR = 0.22; const circGeom = new THREE.CircleGeometry(circR, 48);
-        const shadowMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.22, side:THREE.DoubleSide, depthWrite:false });
-        const shadow = new THREE.Mesh(circGeom, shadowMat); scene.add(shadow);
-        nodesRef.current.push({ ...node, el: chip, shadow });
-      } else {
-        nodesRef.current.push(node);
-      }
-      refreshHeat();
-    }
-
-    function focusToLatLon(lat, lon, { dist = 11, duration = 650 } = {}){
-      const end = latLonToPlane(lat, lon, 0);
-      const start = targetOffsetRef.current.clone();
-      camAnimRef.current = {
-        start: { x: start.x, y: start.y, dist: camDistRef.current },
-        end:   { x: end.x,   y: end.y,   dist },
-        t0: performance.now(),
-        dur: duration
-      };
-    }
-
-    // Expose internal helpers for UI handlers outside this scope
-    internalApiRef.current = { addConnection, updateArcsForIndex, deleteNode, duplicateNode, focusToLatLon };
+  // Internal helpers kept local; external API is exposed via onApi only
 
     // Crear chips circulares (HTML) para cada nodo
     const nodes = nodesData.map((n, idx) => {
@@ -371,7 +294,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
     // HEATMAP
   const heatPass = new HeatmapPass(renderer, { width:1024, height:512, sigmaPx: initialSigmaRef.current });
     // Alinear DPR del heatmap con el canvas principal
-    try { heatPass.setDPR(renderer.getPixelRatio?.() ?? 1); } catch {}
+  try { heatPass.setDPR(renderer.getPixelRatio?.() ?? 1); } catch {/* ignore dpr set errors */}
     heatPassRef.current = heatPass;
   const heatLayer = createHeatLayer({ width: PLANE_WIDTH, height: PLANE_HEIGHT, texture: heatPass.texture, opacity: initialOpacityRef.current, reverse: initialReverseRef.current });
     heatLayerRef.current = heatLayer;
@@ -382,20 +305,24 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
         const uv = latLonToUV(n.lat, n.lon);
         return { u: uv.u, v: uv.v, weight: THREE.MathUtils.clamp((n.priority ?? 5)/10, 0, 1), radiusPx: 32 };
       });
-      heatPass.setPoints(pts, { defaultRadiusPx: 32 });
-      heatPass.render();
+      try {
+        heatPass.setPoints(pts, { defaultRadiusPx: 32 });
+        heatPass.render();
+      } catch (e) {
+        addErrorRef.current?.(e, 'heatmap-render', 'warning');
+      }
       heatLayer.material.uniforms.uHeatTex.value = heatPass.texture;
       // Expose for tests/validation
       try {
         window.__heatPts = pts;
         window.__nodeCoords = nodesRef.current.map(n => ({ lat: n.lat, lon: n.lon }));
-      } catch {}
+  } catch {/* ignore theme application errors */}
     }
     refreshHeat();
 
     // Public API: add an island from outside
-    function zoneToLatLon(zone){
-      switch(zone){
+  function zoneToLatLon(area){
+      switch(area){
         case 'Américas': return { lat: 12, lon: -70 };
         case 'Europa/África': return { lat: 18, lon: 20 };
         case 'Asia/Oceanía': return { lat: 24, lon: 120 };
@@ -454,7 +381,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
     }
     function removePointer(e) { pointers.delete(e.pointerId); }
 
-    const onPointerDown = (e) => {
+  const onPointerDown = (e) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.current.set(((e.clientX - rect.left)/rect.width) * 2 - 1, -((e.clientY - rect.top)/rect.height) * 2 + 1);
       raycaster.current.setFromCamera(mouse.current, camera);
@@ -669,7 +596,15 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
   arc.material.dashOffset = -(t * 0.6);
   // Animate custom arcs
   arcsRef.current.forEach(obj => { if (obj?.line?.material) obj.line.material.dashOffset = -(t * 0.6); });
-      renderer.render(scene, camera);
+      try {
+        renderer.render(scene, camera);
+      } catch (e) {
+        // Prevent crash; log once per second max
+        if (!animate._lastErrTs || (performance.now() - animate._lastErrTs) > 1000) {
+          animate._lastErrTs = performance.now();
+          addErrorRef.current?.(e, 'globe-render', 'error');
+        }
+      }
       if (firstFrame) {
         firstFrame = false;
         // Notify that the scene rendered at least once
@@ -695,7 +630,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
         const accent = readCssVar('--accent', '#ff77aa');
         arc.material?.color?.set(accent);
         if (arcsGroupRef.current) arcsGroupRef.current.children.forEach(ch => ch.material?.color?.set(accent));
-      } catch {}
+      } catch { /* ignore theme color apply errors */ }
     }
     applyThemeToThree();
     const themeObserver = new MutationObserver(muts => {
@@ -707,10 +642,10 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
 
     const onResize = () => {
       const w = mountEl.clientWidth, h = mountEl.clientHeight;
-      renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix();
-      try { heatPass.setDPR(renderer.getPixelRatio?.() ?? 1); } catch {}
+    renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix();
+    try { heatPassRef.current?.setDPR(renderer.getPixelRatio?.() ?? 1); } catch {/* ignore dpr set errors */}
       // Mantén proporción 2:1 del RT, o ajusta si necesitas mayor resolución
-      try { heatPass.setSize(1024, 512); } catch {}
+    try { heatPassRef.current?.setSize(1024, 512); } catch {/* ignore resize errors */}
     };
     window.addEventListener('resize', onResize);
 
@@ -726,7 +661,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
       if (mountEl && mountEl.contains(renderer.domElement)) {
         mountEl.removeChild(renderer.domElement);
       }
-      heatPass.dispose();
+  try { heatPassRef.current?.dispose(); } catch {/* ignore heat dispose */}
       // dispose geometries
       [planeGeom, arcGeom].forEach(g=>g.dispose());
       if (arcsGroupRef.current) {
@@ -742,21 +677,28 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
       // limpiar sombras y guía
       nodesRef.current.forEach(n=>{ if (n.shadow && n.shadow.parent) n.shadow.parent.remove(n.shadow); });
       if (guideRef && guideRef.current && guideRef.current.parent) guideRef.current.parent.remove(guideRef.current);
-      try { themeObserver.disconnect(); } catch {}
+  try { themeObserver.disconnect(); } catch {/* ignore observer disconnect */}
     };
   }, []);
 
   // Controles HUD
   useEffect(() => { if (heatLayerRef.current) heatLayerRef.current.material.uniforms.uOpacity.value = opacity; }, [opacity]);
-  useEffect(() => { if (heatPassRef.current) { heatPassRef.current.setSigmaPx(sigmaPx); heatPassRef.current.render(); } }, [sigmaPx]);
+  useEffect(() => {
+    if (heatPassRef.current) {
+      try { heatPassRef.current.setSigmaPx(sigmaPx); heatPassRef.current.render(); }
+      catch (e) { addErrorRef.current?.(e, 'heatmap-sigma', 'warning'); }
+    }
+  }, [sigmaPx]);
   useEffect(() => {
     if (!heatPassRef.current || !nodesRef.current.length) return;
     const pts = nodesRef.current.map(n => {
       const uv = latLonToUV(n.lat, n.lon);
       return { u: uv.u, v: uv.v, weight: (n.priority ?? 5)/10, radiusPx };
     });
-    heatPassRef.current.setPoints(pts, { defaultRadiusPx: radiusPx });
-    heatPassRef.current.render();
+    try {
+      heatPassRef.current.setPoints(pts, { defaultRadiusPx: radiusPx });
+      heatPassRef.current.render();
+    } catch (e) { addErrorRef.current?.(e, 'heatmap-radius', 'warning'); }
   }, [radiusPx]);
   useEffect(() => { if (heatLayerRef.current) heatLayerRef.current.material.uniforms.uReverse.value = reverse; }, [reverse]);
   // Vista: grid visible toggle
@@ -775,7 +717,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
         open={selectedIdx>=0}
         node={selectedIdx>=0 ? nodesRef.current[selectedIdx] : null}
         onClose={()=> setSelectedIdx(-1)}
-        onSave={({ title, zone, priority })=>{
+        onSave={({ title, priority })=>{
           const idx = selectedIdx; if (idx<0) return;
           // lightweight update: only title and priority; lat/lon by zone TBD
           const node = nodesRef.current[idx];
@@ -819,28 +761,47 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
               e.stopPropagation();
               if (connectModeRef.current.active) {
                 const srcIdx = connectModeRef.current.sourceIdx;
-                if (srcIdx !== newIdx && srcIdx >= 0) addConnection(srcIdx, newIdx);
+                if (srcIdx !== newIdx && srcIdx >= 0) {
+                  // create a dashed connection line directly
+                  const a = nodesRef.current[srcIdx];
+                  const b = nodesRef.current[newIdx];
+                  if (a && b && arcsGroupRef.current) {
+                    const A = latLonToPlane(a.lat, a.lon, LABEL_Z + 0.01);
+                    const B = latLonToPlane(b.lat, b.lon, LABEL_Z + 0.01);
+                    const g = new THREE.BufferGeometry().setFromPoints([A, B]);
+                    const m = new THREE.LineDashedMaterial({ color: new THREE.Color(readCssVar('--accent', '#ff77aa')), transparent:true, opacity:.95, dashSize:.22, gapSize:.15 });
+                    const line = new THREE.Line(g, m); line.computeLineDistances(); line.renderOrder = 2;
+                    arcsGroupRef.current.add(line);
+                    arcsRef.current.push({ aIdx: srcIdx, bIdx: newIdx, line });
+                  }
+                }
                 connectModeRef.current = { active:false, sourceIdx:-1 };
                 return;
               }
               setSelectedIdx(newIdx); selectedIdxRef.current = newIdx;
             });
             labelLayerEl.appendChild(chip);
-            const circR = 0.22; const circGeom = new THREE.CircleGeometry(circR, 48);
-            const shadowMat = new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.22, side:THREE.DoubleSide, depthWrite:false });
-            const shadow = new THREE.Mesh(circGeom, shadowMat);
-            // Need scene reference; creating closure not available here, so skip if not mounted
-            const parent = mountRef.current?.querySelector('canvas') ? true : true; // noop: scene already has reference inside effect
+            // shadow circle radius removed (unused)
+            // attach listeners with connect-mode support
+            chip.addEventListener('mouseleave', ()=> { setHoveredIdx(v => v===newIdx ? -1 : v); if (hoveredIdxRef.current === newIdx) hoveredIdxRef.current = -1; });
+        // scene reference available within effect scope
             // Use global THREE scene reference via captured variable 'scene' isn't accessible; shadows will be positioned in loop after push
             // To ensure it's added: find renderer via WebGL context isn't trivial here; instead, we signal duplicate via nodesRef and let initial shadows persist
             // But we need it now:
             // As we are in same render cycle, we can add to scene via a minimal indirection by storing a function in internalApiRef
           }
           // Fallback simple duplicate using addIsland
-          // Not ideal for exact lat/lon, but acceptable for now
-          // Using zoneToLatLon may reposition; skip and push node without shadow; animation loop will handle shadow absence
+          // Duplicate: push node without shadow; animation loop will handle shadow absence
           nodesRef.current.push({ ...node, el: labelLayerEl?.lastChild || null, shadow: null });
-          refreshHeat();
+          // re-render heat with current points
+          if (heatPassRef.current && typeof heatPassRef.current.setPoints === 'function') {
+            const pts = nodesRef.current.map(n => {
+              const uv = latLonToUV(n.lat, n.lon);
+              return { u: uv.u, v: uv.v, weight: (n.priority ?? 5)/10, radiusPx };
+            });
+            heatPassRef.current.setPoints(pts, { defaultRadiusPx: radiusPx });
+            heatPassRef.current.render();
+          }
           setSelectedIdx(-1);
         }}
         onDelete={()=>{
@@ -859,19 +820,28 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
               keep.push(obj);
             }
           });
-          arcsRef.current = { current: keep };
+          // replace touching arcs and reindex
+          arcsRef.current = keep;
           // Remove node and reindex
           nodesRef.current.splice(idx, 1);
           nodesRef.current.forEach((node, i) => {
             if (node.el) node.el.setAttribute('data-node-index', String(i));
           });
           // Reindex remaining arcs
-          arcsRef.current = { current: (arcsRef.current.current || keep).map(o => ({
+          arcsRef.current = arcsRef.current.map(o => ({
             aIdx: o.aIdx > idx ? o.aIdx - 1 : o.aIdx,
             bIdx: o.bIdx > idx ? o.bIdx - 1 : o.bIdx,
             line: o.line
-          })) };
-          refreshHeat();
+          }));
+          // update heatmap after deletion
+          if (heatPassRef.current && typeof heatPassRef.current.setPoints === 'function') {
+            const pts = nodesRef.current.map(n => {
+              const uv = latLonToUV(n.lat, n.lon);
+              return { u: uv.u, v: uv.v, weight: (n.priority ?? 5)/10, radiusPx };
+            });
+            heatPassRef.current.setPoints(pts, { defaultRadiusPx: radiusPx });
+            heatPassRef.current.render();
+          }
           setSelectedIdx(-1);
         }}
         onFocus={()=>{
@@ -887,6 +857,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
           setSelectedIdx(-1);
         }}
       />
+      {showControls && (
       <HeatmapControls
         // Calor
         opacity={opacity} sigmaPx={sigmaPx} radiusPx={radiusPx} reverse={reverse}
@@ -895,7 +866,7 @@ function createRectGrid(width, height, meridians = 12, parallels = 12, { color =
         autoRotate={autoRotate} showGrid={showGrid} showLabels={showLabels}
         onAutoRotate={setAutoRotate} onShowGrid={setShowGrid} onShowLabels={setShowLabels}
         onHelp={onHelp}
-      />
+      />)}
     </div>
   );
 }

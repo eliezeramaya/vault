@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nube 3D — Estrellas + Esferas wire + Líneas (reproducible)</title>
+  <style>
+    html, body { height: 100%; margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; background: radial-gradient(1200px 800px at 20% 10%, #0b1220 0%, #0a0f1a 40%, #070b13 100%); color: #e6edf3; }
+    #app { position: fixed; inset: 0; overflow: hidden; }
+    canvas { display: block; }
+
+    .panel { position: absolute; top: 12px; left: 12px; width: 380px; max-height: calc(100% - 24px); overflow: auto; background: rgba(13, 20, 33, 0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 14px 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+    .panel h1 { margin: 0 0 10px; font-size: 16px; letter-spacing: .3px; color: #c9d1d9; }
+    .row { display: grid; grid-template-columns: 1fr 140px; gap: 8px; align-items: center; margin: 6px 0; }
+    .row > label { font-size: 12px; opacity: .9; }
+    .row input[type="number"], .row input[type="text"] { width: 100%; padding: 6px 8px; background: #0d1320; color: #e6edf3; border: 1px solid #1f2a44; border-radius: 8px; }
+    .row input[type="checkbox"]{ transform: translateY(1px); }
+    .col2 { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+    .btn { margin-top: 8px; width:100%; padding: 8px 10px; border-radius: 10px; border: 1px solid #2a3a65; background: linear-gradient(180deg,#182543,#101a33); color: #cfe2ff; cursor: pointer; }
+    .btn:hover { filter: brightness(1.1); }
+    .muted { font-size: 11px; opacity: .75; margin-top: 6px; }
+    .kbd { padding: 1px 6px; border: 1px solid #3a4a77; border-bottom-width: 2px; border-radius: 6px; background:#0e1a33; font-size:11px; }
+
+    #tooltip { position: absolute; pointer-events: none; transform: translate(12px, 12px); min-width: 140px; background: rgba(8,12,20,.9); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 8px 10px; font-size: 12px; color: #cfe2ff; display: none; }
+    #tooltip .id { font-weight: 600; color:#9ccaff; }
+
+    #ping { position:absolute; pointer-events:none; width:14px; height:14px; border-radius:50%; border:2px solid #8dd3ff; opacity:.0; transform: translate(-8px,-8px); box-shadow:0 0 12px rgba(141,211,255,.8); }
+
+    details { margin-top:8px; }
+    #testsLog { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:#0a1324; padding:8px; border-radius:8px; border:1px solid #1b2a4a; }
+    .ok { color:#9ef0cf; } .fail { color:#ffb3b3; } .warn { color:#ffd59e; }
+  </style>
+
+  <!-- Import Map: módulos ESM de three + addons de líneas con grosor -->
+  <script type="importmap">{
+    "imports": {
+      "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+    }
+  }</script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div class="panel" id="panel">
+    <h1>Estrellas + Esferas wire + Líneas (reproducible)</h1>
+    <div class="row"><label>Seed</label><input id="seed" type="text" placeholder="auto" /></div>
+    <div class="row"><label>R1 / N1</label><div class="col2"><input id="r1" type="number" step="0.1" value="1.0"/><input id="n1" type="number" value="200"/></div></div>
+    <div class="row"><label>R2 / N2</label><div class="col2"><input id="r2" type="number" step="0.1" value="1.6"/><input id="n2" type="number" value="350"/></div></div>
+    <div class="row"><label>R3 / N3</label><div class="col2"><input id="r3" type="number" step="0.1" value="2.3"/><input id="n3" type="number" value="500"/></div></div>
+    <div class="row"><label>k vecinos (intra)</label><input id="knear" type="number" value="3"/></div>
+    <div class="row"><label>p inter-capa (0..1)</label><input id="pinter" type="number" step="0.01" value="0.05"/></div>
+    <div class="row"><label>Antialias</label><input id="aa" type="checkbox" checked /></div>
+    <div class="row"><label>Precisión decimales</label><input id="prec" type="number" step="1" min="0" value="3"/></div>
+
+    <!-- Visual: tamaños/brightness/modo -->
+    <div class="row"><label>Tamaño L1</label><input id="size1" type="range" min="0.4" max="3.0" step="0.1" value="1.6"/></div>
+    <div class="row"><label>Tamaño L2</label><input id="size2" type="range" min="0.4" max="3.0" step="0.1" value="1.4"/></div>
+    <div class="row"><label>Tamaño L3</label><input id="size3" type="range" min="0.4" max="3.0" step="0.1" value="1.2"/></div>
+    <div class="row"><label>Brillo global</label><input id="brightness" type="range" min="0.2" max="1.5" step="0.05" value="0.9"/></div>
+    <div class="row"><label>Modo aditivo</label><input id="additive" type="checkbox" /></div>
+
+    <!-- Colores y líneas -->
+    <div class="row"><label>Color L1</label><input id="color1" type="color" value="#ffffff"/></div>
+    <div class="row"><label>Color L2</label><input id="color2" type="color" value="#bfdcff"/></div>
+    <div class="row"><label>Color L3</label><input id="color3" type="color" value="#d7f7ff"/></div>
+    <div class="row"><label>Grosor líneas</label><input id="edgeWidth" type="range" min="0.5" max="6" step="0.1" value="1.5"/></div>
+    <div class="row"><label>Color aristas</label><input id="edgeColor" type="color" value="#6ea2ff"/></div>
+
+    <button class="btn" id="regen">Regenerar (R)</button>
+    <div class="col2" style="margin-top:8px;">
+      <button class="btn" id="exportNodes">Exportar nodes.json</button>
+      <button class="btn" id="exportEdges">Exportar edges.json</button>
+    </div>
+    <div class="muted">Teclas: <span class="kbd">1</span>/<span class="kbd">2</span>/<span class="kbd">3</span> capas, <span class="kbd">G</span> líneas, <span class="kbd">R</span> resembrar, <span class="kbd">H</span> panel.</div>
+    <div class="muted" id="stats"></div>
+    <details id="testsBox"><summary>Tests (auto)</summary>
+      <div id="testsLog">Pendiente…</div>
+    </details>
+  </div>
+
+  <div id="tooltip"></div>
+  <div id="ping"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+    import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+    import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+
+    const app = document.getElementById('app');
+    const panel = document.getElementById('panel');
+    const tooltip = document.getElementById('tooltip');
+    const ping = document.getElementById('ping');
+
+    const ui = {
+      seed: document.getElementById('seed'),
+      r1: document.getElementById('r1'), r2: document.getElementById('r2'), r3: document.getElementById('r3'),
+      n1: document.getElementById('n1'), n2: document.getElementById('n2'), n3: document.getElementById('n3'),
+      knear: document.getElementById('knear'), pinter: document.getElementById('pinter'),
+      aa: document.getElementById('aa'), prec: document.getElementById('prec'),
+      size1: document.getElementById('size1'), size2: document.getElementById('size2'), size3: document.getElementById('size3'),
+      brightness: document.getElementById('brightness'), additive: document.getElementById('additive'),
+      color1: document.getElementById('color1'), color2: document.getElementById('color2'), color3: document.getElementById('color3'),
+      edgeWidth: document.getElementById('edgeWidth'), edgeColor: document.getElementById('edgeColor'),
+      regen: document.getElementById('regen'), exportNodes: document.getElementById('exportNodes'), exportEdges: document.getElementById('exportEdges'),
+      stats: document.getElementById('stats'), testsLog: document.getElementById('testsLog')
+    };
+
+    const params = {
+      radii: [1.0, 1.6, 2.3], counts: [200, 350, 500], k: 3, p: 0.05, seed: null,
+      sizes: [1.6,1.4,1.2], brightness: 0.9, additive: false,
+      colors: [0xffffff, 0xbfdcff, 0xd7f7ff], edgeWidth: 1.5, edgeColor: 0x6ea2ff
+    };
+
+    let renderer, scene, camera, controls;
+    let pointsLayers = [];   // estrellas (Points) por capa
+    let wireframes = [];     // Esferas concéntricas (wire)
+    let edgesObj = null;     // aristas Line2
+
+    // Evitar listeners y RAF duplicados
+    let listenersAttached = false;
+    let rafId = null;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.params.Points = { threshold: 0.12 };
+    const mouse = new THREE.Vector2();
+
+    let hovered = null; // {node}
+    let selected = null;
+
+    let nodes = []; // {id, layer, position:[x,y,z], data?}
+    let edges = []; // {source, target}
+
+    // ===== RNG y utilidades =====
+    function mulberry32(a){ return function(){ let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
+    function hashStringToSeed(str){ let h = 5381; for (let i=0;i<str.length;i++){ h = ((h<<5)+h) + str.charCodeAt(i); } return h >>> 0; }
+
+    function randomPointOnSphere(r, rnd){
+      const u = rnd(); const v = rnd();
+      const theta = 2 * Math.PI * u; const phi = Math.acos(2 * v - 1); const s = Math.sin(phi);
+      return new THREE.Vector3(r * s * Math.cos(theta), r * s * Math.sin(theta), r * Math.cos(phi));
+    }
+    function hexToInt(hex){ return parseInt(hex.replace('#',''), 16); }
+    function intToHex(int){ return '#' + int.toString(16).padStart(6,'0'); }
+
+    // ===== Nodos =====
+    function generateNodes(seedStr){
+      const seedNum = seedStr ? hashStringToSeed(seedStr) : (Math.random()*1e9)|0;
+      const rnd = mulberry32(seedNum);
+      nodes = [];
+      const [R1,R2,R3] = params.radii; const [N1,N2,N3] = params.counts; const perLayer = [[1,R1,N1],[2,R2,N2],[3,R3,N3]];
+      for (const [layer, R, N] of perLayer){
+        for (let i=0;i<N;i++){
+          const pos = randomPointOnSphere(R, rnd);
+          const id = `L${layer}-${String(i+1).padStart(4,'0')}`;
+          nodes.push({ id, layer, position:[pos.x,pos.y,pos.z] });
+        }
+      }
+      params.seed = seedNum;
+      ui.stats.textContent = `Seed: ${seedNum} • Nodos: ${nodes.length}`;
+    }
+
+    // ===== Aristas =====
+    const edgeKey = (s,t)=> s<t ? `${s}|${t}` : `${t}|${s}`;
+    function buildEdges(){
+      edges = []; const edgeSet = new Set();
+      const k = Math.max(0, parseInt(params.k)); const p = Math.max(0, Math.min(1, Number(params.p)));
+      const rndEdge = mulberry32(((params.seed>>>0) + 0x9E3779B9) >>> 0);
+      const layerMap = {1:[],2:[],3:[]}; for (const n of nodes) layerMap[n.layer].push(n);
+      for (const layer of [1,2,3]){
+        const arr = layerMap[layer];
+        for (let i=0;i<arr.length;i++){
+          const a = arr[i]; const dists = [];
+          for (let j=0;j<arr.length;j++) if (j!==i){
+            const b = arr[j];
+            const dx=a.position[0]-b.position[0]; const dy=a.position[1]-b.position[1]; const dz=a.position[2]-b.position[2];
+            dists.push([j, dx*dx+dy*dy+dz*dz]);
+          }
+          dists.sort((u,v)=>u[1]-v[1]);
+          for (let m=0;m<Math.min(k,dists.length);m++){
+            const j=dists[m][0]; const b=arr[j]; const key=edgeKey(a.id,b.id);
+            if(!edgeSet.has(key)){edgeSet.add(key); edges.push({source:a.id,target:b.id});}
+          }
+        }
+      }
+      function maybeConnectBetween(a, bArr){
+        if (rndEdge()<p && bArr.length){
+          let best=null, bestDot=-Infinity; const va=new THREE.Vector3(...a.position).normalize();
+          for (const b of bArr){ const vb=new THREE.Vector3(...b.position).normalize(); const dot=va.dot(vb); if(dot>bestDot){bestDot=dot; best=b;} }
+          if(best){ const key=edgeKey(a.id,best.id); if(!edgeSet.has(key)){edgeSet.add(key); edges.push({source:a.id,target:best.id}); } }
+        }
+      }
+      for (const a of layerMap[1]) maybeConnectBetween(a, layerMap[2]);
+      for (const a of layerMap[2]){ maybeConnectBetween(a, layerMap[1]); maybeConnectBetween(a, layerMap[3]); }
+      for (const a of layerMap[3]) maybeConnectBetween(a, layerMap[2]);
+    }
+
+    // ===== Geometrías (estrellas + wire + líneas gruesas) =====
+    let starTex = null;
+    function createStarTexture(){
+      if (starTex) return starTex;
+      const s = 96; const c = document.createElement('canvas'); c.width=c.height=s; const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(s/2,s/2,0, s/2,s/2,s/2);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.35, 'rgba(255,255,255,0.35)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(0,0,s,s);
+      starTex = new THREE.CanvasTexture(c); starTex.anisotropy = 8; starTex.needsUpdate = true; return starTex;
+    }
+
+    function clearScene(){
+      for (const p of pointsLayers){ scene.remove(p); if(p.geometry) p.geometry.dispose(); if(p.material) p.material.dispose(); }
+      pointsLayers = [];
+      if (edgesObj){
+        if (edgesObj.geometry) edgesObj.geometry.dispose();
+        if (edgesObj.material) edgesObj.material.dispose();
+        scene.remove(edgesObj); edgesObj = null;
+      }
+      for (const w of wireframes){ scene.remove(w); }
+      wireframes = [];
+    }
+
+    function buildGeometries(){
+      clearScene();
+
+      // Estrellas
+      const tex = createStarTexture();
+      for (const layer of [1,2,3]){
+        const arr = nodes.filter(n=>n.layer===layer);
+        const geo = new THREE.BufferGeometry();
+        const positions = new Float32Array(arr.length*3);
+        for (let i=0;i<arr.length;i++) positions.set(arr[i].position, i*3);
+        geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+
+        const size = params.sizes[layer-1];
+        const opacity = Math.min(1, Math.max(0.05, params.brightness));
+        const mat = new THREE.PointsMaterial({
+          size, sizeAttenuation: true, map: tex, alphaMap: tex,
+          color: params.colors[layer-1], transparent: true, opacity,
+          depthTest: true, depthWrite: false,
+          blending: params.additive ? THREE.AdditiveBlending : THREE.NormalBlending
+        });
+        const pts = new THREE.Points(geo, mat); pts.userData = { layer }; scene.add(pts); pointsLayers.push(pts);
+      }
+
+      // Esferas wire
+      for (const R of params.radii){
+        const g = new THREE.WireframeGeometry(new THREE.SphereGeometry(R, 24, 16));
+        const w = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x4d618f, opacity:0.22, transparent:true }));
+        scene.add(w); wireframes.push(w);
+      }
+
+      // Aristas con grosor (Line2)
+      if (edges.length){
+        const pos = new Float32Array(edges.length*2*3);
+        let ii=0; const byId = new Map(nodes.map(n=>[n.id,n]));
+        for (const e of edges){
+          const a=byId.get(e.source), b=byId.get(e.target); if(!a||!b) continue;
+          pos[ii++]=a.position[0]; pos[ii++]=a.position[1]; pos[ii++]=a.position[2];
+          pos[ii++]=b.position[0]; pos[ii++]=b.position[1]; pos[ii++]=b.position[2];
+        }
+        const geom = new LineSegmentsGeometry();
+        geom.setPositions(pos.subarray(0,ii));
+        const mat = new LineMaterial({
+          color: params.edgeColor,
+          linewidth: params.edgeWidth / Math.max(1, window.devicePixelRatio),
+          transparent:true, opacity:0.28
+        });
+        mat.resolution.set(window.innerWidth, window.innerHeight);
+        edgesObj = new LineSegments2(geom, mat);
+        scene.add(edgesObj);
+      }
+    }
+
+    // ===== Handlers de teclado =====
+    function onKey(e){
+      const key = (e && e.key ? e.key : '').toString();
+      if (!key) return;
+      if (key === '1' || key === '2' || key === '3'){
+        const idx = Number(key)-1;
+        const obj = pointsLayers[idx];
+        if (obj) obj.visible = !obj.visible;
+      } else if (key.toLowerCase() === 'g'){
+        if (edgesObj) edgesObj.visible = !edgesObj.visible;
+      } else if (key.toLowerCase() === 'r'){
+        regenerate();
+      } else if (key.toLowerCase() === 'h'){
+        panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+      }
+    }
+
+    // ===== Three init =====
+    function initThree(){
+      if (renderer && renderer.domElement && renderer.domElement.parentNode){
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      }
+      renderer = new THREE.WebGLRenderer({ antialias: ui.aa.checked, powerPreference:'high-performance' });
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      app.replaceChildren(renderer.domElement);
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.01, 100);
+      camera.position.set(0, 0, params.radii[2]*3.2);
+
+      const hemi = new THREE.HemisphereLight(0x8899ff, 0x080b14, 0.15); scene.add(hemi);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true; controls.dampingFactor = 0.06;
+      controls.minDistance = params.radii[0]*0.6; controls.maxDistance = params.radii[2]*6.0;
+
+      // Listeners ventana: una sola vez
+      if (!listenersAttached){
+        window.addEventListener('resize', onResize);
+        window.addEventListener('keydown', onKey);
+        listenersAttached = true;
+      }
+      // Listeners del canvas actual
+      renderer.domElement.addEventListener('pointermove', onPointerMove);
+      renderer.domElement.addEventListener('click', onClick);
+
+      ui.stats.textContent = `WebGL${renderer.capabilities.isWebGL2?2:1} • pxRatio ${Math.min(2, window.devicePixelRatio).toFixed(2)}`;
+    }
+
+    function onResize(){
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (edgesObj && edgesObj.material && edgesObj.material.resolution){
+        edgesObj.material.resolution.set(window.innerWidth, window.innerHeight);
+      }
+    }
+
+    // ===== Picking de estrellas =====
+    function intersectNodes(ev){
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = - ((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      let hit = null, hitDist = Infinity, hitInfo = null;
+      for (const pts of pointsLayers){
+        const isects = raycaster.intersectObject(pts, false);
+        if (isects.length){
+          const it = isects[0];
+          if (it.distance < hitDist){ hit = pts; hitDist = it.distance; hitInfo = it; }
+        }
+      }
+      if (!hit) return null;
+      const layer = hit.userData.layer; const arr = nodes.filter(n=>n.layer===layer);
+      const index = hitInfo.index; const node = arr[index];
+      return { node };
+    }
+
+    function onPointerMove(ev){ const pick = intersectNodes(ev); if (pick){ hovered = pick.node; showTooltip(ev.clientX, ev.clientY, pick.node); } else { hovered=null; hideTooltip(); } }
+    function onClick(ev){ const pick = intersectNodes(ev); if (!pick) return; selected = pick.node; pingAt(ev.clientX, ev.clientY); focusOn(selected); }
+
+    function showTooltip(x,y,node){ const prec = Math.max(0, parseInt(ui.prec?.value || '3')); const fmt = (v)=> Number(v).toFixed(prec); tooltip.innerHTML = `<div class="id">${node.id}</div><div>layer: ${node.layer}</div><div>pos: [${node.position.map(v=>fmt(v)).join(', ')}]</div>${node.data ? `<div>data: ${formatData(node.data)}</div>` : ''}`; tooltip.style.left = x + 'px'; tooltip.style.top = y + 'px'; tooltip.style.display = 'block'; }
+    function hideTooltip(){ tooltip.style.display = 'none'; }
+    function pingAt(x,y){ ping.style.left = x + 'px'; ping.style.top = y + 'px'; ping.style.opacity = '1'; ping.animate([{ transform:'translate(-8px,-8px) scale(0.4)', opacity:1 },{ transform:'translate(-8px,-8px) scale(1.8)', opacity:0 }], { duration: 600, easing: 'cubic-bezier(.2,.8,.2,1)' }); setTimeout(()=> ping.style.opacity='0', 620); }
+    function formatData(d){ try{ return JSON.stringify(d).slice(0,120).replace(/[{}\"]/g,'').replace(/:/g,': '); }catch{ return String(d); } }
+
+    function focusOn(node){ const target = new THREE.Vector3(...node.position); const startTarget = controls.target.clone(); const startPos = camera.position.clone(); const endTarget = target.clone(); const dir = new THREE.Vector3().subVectors(startPos, startTarget); const endPos = new THREE.Vector3().addVectors(endTarget, dir.multiplyScalar(0.8)); tween(600, t=>{ controls.target.lerpVectors(startTarget, endTarget, t); camera.position.lerpVectors(startPos, endPos, t); controls.update(); }); }
+    function tween(ms, onFrame){ const t0 = performance.now(); function step(now){ const t = Math.min(1, (now - t0)/ms); const e = t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; onFrame(e); if (t<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
+
+    // ===== Export y API =====
+    function downloadJSON(obj, filename){ const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href); }
+    function exportNodes(){ const prec = Math.max(0, parseInt(ui.prec?.value || '3')); const round=(v)=> Number(v.toFixed(prec)); const grouped=[1,2,3].map(layer=>({
+      layer, radius:Number(params.radii[layer-1].toFixed(prec)),
+      nodes:nodes.filter(n=>n.layer===layer).map(n=>({ id:n.id, position:n.position.map(round) }))
+    })); downloadJSON({ seed: params.seed, layers: grouped }, 'nodes.json'); }
+    function exportEdges(){ downloadJSON({ seed: params.seed, edges }, 'edges.json'); }
+    window.loadNodeData = function(dataById){ const map=new Map(nodes.map(n=>[n.id,n])); for (const [id,data] of Object.entries(dataById||{})){ const n=map.get(id); if(n){ n.data=data; } } }
+
+    // ===== Loop (evitar múltiples RAF) =====
+    function startLoop(){ if (rafId==null) rafId = requestAnimationFrame(loop); }
+    function loop(){ controls.update(); renderer.render(scene, camera); rafId = requestAnimationFrame(loop); }
+    function stopLoop(){ if (rafId!=null){ cancelAnimationFrame(rafId); rafId=null; } }
+
+    // ===== Entrypoint =====
+    function readUI(){
+      params.radii=[Number(ui.r1.value), Number(ui.r2.value), Number(ui.r3.value)];
+      params.counts=[parseInt(ui.n1.value), parseInt(ui.n2.value), parseInt(ui.n3.value)];
+      params.k=parseInt(ui.knear.value); params.p=Number(ui.pinter.value);
+      params.sizes=[Number(ui.size1.value), Number(ui.size2.value), Number(ui.size3.value)];
+      params.brightness=Number(ui.brightness.value); params.additive=!!ui.additive.checked;
+      params.colors=[hexToInt(ui.color1.value), hexToInt(ui.color2.value), hexToInt(ui.color3.value)];
+      params.edgeWidth=Number(ui.edgeWidth.value); params.edgeColor=hexToInt(ui.edgeColor.value);
+    }
+    function regenerate(){ readUI(); generateNodes(ui.seed.value.trim()); buildEdges(); buildGeometries(); controls.minDistance=params.radii[0]*0.6; controls.maxDistance=params.radii[2]*6.0; camera.position.set(0,0,params.radii[2]*3.2); runTests(); }
+    function initUI(){
+      // iniciales
+      ui.color1.value = intToHex(params.colors[0]);
+      ui.color2.value = intToHex(params.colors[1]);
+      ui.color3.value = intToHex(params.colors[2]);
+      ui.edgeWidth.value = params.edgeWidth;
+      ui.edgeColor.value = intToHex(params.edgeColor);
+
+      ui.regen.addEventListener('click', ()=>{ regenerate(); });
+      ui.exportNodes.addEventListener('click', exportNodes);
+      ui.exportEdges.addEventListener('click', exportEdges);
+      ui.aa.addEventListener('change', ()=>{ initThree(); buildGeometries(); });
+      // Live updates visuales
+      ui.size1.addEventListener('input', ()=>{ params.sizes[0]=Number(ui.size1.value); buildGeometries(); });
+      ui.size2.addEventListener('input', ()=>{ params.sizes[1]=Number(ui.size2.value); buildGeometries(); });
+      ui.size3.addEventListener('input', ()=>{ params.sizes[2]=Number(ui.size3.value); buildGeometries(); });
+      ui.brightness.addEventListener('input', ()=>{ params.brightness=Number(ui.brightness.value); buildGeometries(); });
+      ui.additive.addEventListener('change', ()=>{ params.additive=!!ui.additive.checked; buildGeometries(); });
+      ui.color1.addEventListener('input', ()=>{ params.colors[0]=hexToInt(ui.color1.value); buildGeometries(); });
+      ui.color2.addEventListener('input', ()=>{ params.colors[1]=hexToInt(ui.color2.value); buildGeometries(); });
+      ui.color3.addEventListener('input', ()=>{ params.colors[2]=hexToInt(ui.color3.value); buildGeometries(); });
+      ui.edgeWidth.addEventListener('input', ()=>{ params.edgeWidth=Number(ui.edgeWidth.value); buildGeometries(); });
+      ui.edgeColor.addEventListener('input', ()=>{ params.edgeColor=hexToInt(ui.edgeColor.value); buildGeometries(); });
+    }
+
+    // ===== Tests =====
+    function runTests(){
+      const logs=[]; const ok=(m)=>logs.push(`✔ ${m}`), fail=(m)=>logs.push(`✖ ${m}`), warn=(m)=>logs.push(`⚠ ${m}`);
+      try{ if(THREE && typeof OrbitControls==='function') ok('Módulos cargados.'); else fail('Módulos no cargados.'); }catch(e){ fail('Error módulos: '+e.message); }
+      const counts=[1,2,3].map(L=>nodes.filter(n=>n.layer===L).length); if (counts[0]===params.counts[0]&&counts[1]===params.counts[1]&&counts[2]===params.counts[2]) ok('Nodos por capa correctos.'); else fail(`Conteos dif: ${counts} vs ${params.counts}`);
+      try{ const a=hashPositions(nodes); const b=hashPositions(generateNodesWithSeed(params.seed, params.radii, params.counts)); if(a===b) ok('Determinismo OK.'); else fail('Determinismo falló.'); }catch(e){ warn('No se pudo verificar determinismo: '+e.message); }
+      const idSet=new Set(nodes.map(n=>n.id)); let bad=0, dup=0; const seen=new Set(); for (const e of edges){ if(!idSet.has(e.source)||!idSet.has(e.target)) bad++; const k=edgeKey(e.source,e.target); if(seen.has(k)) dup++; else seen.add(k);} if(!bad) ok('Aristas válidas.'); else fail(`Aristas inválidas: ${bad}`); if(!dup) ok('Sin aristas duplicadas.'); else fail(`Aristas duplicadas: ${dup}`);
+      // test onKey
+      try{ if (typeof onKey === 'function') ok('onKey definido.'); else fail('onKey no está definido.'); }catch(e){ warn('No se pudo verificar onKey: '+e.message); }
+      try{ const vis0 = pointsLayers[0] ? pointsLayers[0].visible : null; onKey({key:'1'}); if (vis0 !== null) ok('Toggle capa 1 con tecla "1" ejecutado.'); if (vis0 !== null) pointsLayers[0].visible = vis0; }catch(e){ warn('onKey("1") lanzó error: '+e.message); }
+      try{ const prev = edgesObj ? edgesObj.visible : null; onKey({key:'g'}); if (prev !== null) ok('Toggle líneas con tecla "G" ejecutado.'); if (prev !== null) edgesObj.visible = prev; }catch(e){ warn('onKey("g") lanzó error: '+e.message); }
+      // extra: size/color/edgeWidth aplicados
+      try{ if (pointsLayers.length){ const m0 = pointsLayers[0].material; if (m0 && Math.abs(m0.size-params.sizes[0])<1e-6) ok('Size L1 aplicado a material.'); else warn('Size L1 no coincide con material.'); } }catch(e){ warn('No se pudo verificar materiales: '+e.message); }
+      try{ if (pointsLayers.length>1){ const m1 = pointsLayers[1].material; if (m1 && m1.color && m1.color.getHex()===params.colors[1]) ok('Color L2 aplicado.'); else warn('Color L2 no coincide.'); } }catch(e){ warn('No se pudo verificar color L2: '+e.message); }
+      try{ if (edgesObj && edgesObj.material && typeof edgesObj.material.linewidth==='number') ok('Grosor de líneas aplicado.'); else warn('Material de líneas no soporta grosor.'); }catch(e){ warn('No se pudo verificar grosor: '+e.message); }
+
+      ui.testsLog.innerHTML = logs.map(line=>{ const cls=line.startsWith('✔')?'ok':line.startswith('✖')?'fail':'warn'; return `<div class="${cls}">${line}</div>`; }).join('');
+    }
+    function generateNodesWithSeed(seedNum, radii, counts){ const rnd=mulberry32(seedNum>>>0); const list=[]; const [R1,R2,R3]=radii; const [N1,N2,N3]=counts; const perLayer=[[1,R1,N1],[2,R2,N2],[3,R3,N3]]; for(const [layer,R,N] of perLayer){ for(let i=0;i<N;i++){ const p=randomPointOnSphere(R,rnd); list.push({id:`L${layer}-${String(i+1).padStart(4,'0')}`,layer,position:[p.x,p.y,p.z]}); } } return list; }
+    function hashPositions(list){ let h=2166136261>>>0; const dv=new DataView(new ArrayBuffer(4)); for(const n of list){ for(const v of n.position){ const x=Math.fround(v); dv.setFloat32(0,x,true); for(let i=0;i<4;i++){ h^=dv.getUint8(i); h=Math.imul(h,16777619);} } } return (h>>>0).toString(16); }
+
+    // Boot
+    initThree(); initUI(); regenerate(); startLoop();
+  </script>
+</body>
+</html>

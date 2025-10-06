@@ -1,0 +1,326 @@
+/* Global Focus and Keyboard Navigation Styles */
+
+/* Enhanced focus indicators for better keyboard navigation */
+*:focus {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+  transition: outline 0.2s ease !important;
+}
+
+/* High contrast focus for important interactive elements */
+button:focus,
+[role="button"]:focus,
+[role="tab"]:focus,
+[role="menuitem"]:focus {
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 1px var(--accent-bg, rgba(59, 130, 246, 0.2)) !important;
+}
+
+/* Special focus for dangerous actions */
+[data-danger="true"]:focus,
+[aria-label*="eliminar"]:focus,
+[aria-label*="borrar"]:focus,
+[aria-label*="delete"]:focus {
+  outline: 3px solid #f87171 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.2) !important;
+}
+
+/* Focus for form controls */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 1px !important;
+  border-color: var(--accent) !important;
+}
+
+/* Focus for checkboxes and radio buttons */
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 3px !important;
+}
+
+/* Skip to content link for screen readers */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--primary);
+  color: var(--on-primary);
+  padding: 8px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  z-index: 10000;
+  transition: top 0.3s ease;
+}
+
+.skip-to-content:focus {
+  top: 6px;
+  outline: 3px solid white !important;
+}
+
+/* Focus within navigation */
+nav button:focus,
+nav [role="tab"]:focus {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+  background: var(--accent-bg, rgba(59, 130, 246, 0.1)) !important;
+}
+
+/* Focus for grid/matrix elements */
+.eh-note:focus,
+[data-note]:focus {
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 2px !important;
+  transform: scale(1.02) !important;
+  z-index: 10 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 
+              0 0 0 3px var(--accent-bg, rgba(59, 130, 246, 0.2)) !important;
+}
+
+/* Focus for dialog elements */
+[role="dialog"]:focus,
+[role="alertdialog"]:focus {
+  outline: 3px solid var(--accent) !important;
+  outline-offset: -3px !important;
+}
+
+/* Focus for notifications */
+[role="alert"]:focus {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+  transform: scale(1.02) !important;
+}
+
+/* Keyboard navigation hints */
+.keyboard-hint {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  box-shadow: var(--elevation-2);
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.keyboard-hint.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.keyboard-hint kbd {
+  background: var(--accent);
+  color: var(--on-accent, white);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0 2px;
+}
+
+/* Focus trap for modals */
+.focus-trap {
+  position: relative;
+}
+
+.focus-trap::before,
+.focus-trap::after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  *:focus {
+    outline: 4px solid currentColor !important;
+    outline-offset: 2px !important;
+  }
+  
+  button:focus,
+  [role="button"]:focus {
+    outline: 4px solid currentColor !important;
+    outline-offset: 4px !important;
+    background: var(--accent) !important;
+    color: var(--on-accent) !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *:focus {
+    transition: none !important;
+  }
+  
+  .eh-note:focus {
+    transform: none !important;
+  }
+  
+  [role="alert"]:focus {
+    transform: none !important;
+  }
+}
+
+/* Focus indicators for theme buttons */
+[data-theme]:focus {
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 3px !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Focus for error test buttons */
+[data-test]:focus {
+  outline: 3px solid currentColor !important;
+  outline-offset: 3px !important;
+  transform: scale(1.05) !important;
+}
+
+/* Breadcrumb navigation focus */
+.breadcrumb button:focus {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+  background: var(--accent-bg, rgba(59, 130, 246, 0.1)) !important;
+}
+
+/* Focus for matrix grid cells */
+.eh-grid-cell:focus-within {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 1px !important;
+  background: var(--accent-bg, rgba(59, 130, 246, 0.05)) !important;
+}
+
+/* Visual feedback for active navigation */
+.nav-active {
+  position: relative;
+}
+
+.nav-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Focus visible polyfill for older browsers */
+.js-focus-visible :focus:not(.focus-visible) {
+  outline: none !important;
+}
+
+.js-focus-visible .focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+/* Interactive element states */
+[aria-pressed="true"]:focus {
+  outline-color: var(--primary) !important;
+  background: var(--primary) !important;
+  color: var(--on-primary) !important;
+}
+
+[aria-selected="true"]:focus {
+  outline-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--primary-bg, rgba(240, 55, 93, 0.2)) !important;
+}
+
+/* Focus for disabled elements (should not be focusable but visible) */
+[disabled]:focus,
+[aria-disabled="true"]:focus {
+  outline: 2px dashed #666 !important;
+  outline-offset: 2px !important;
+  opacity: 0.5 !important;
+}
+
+/* Custom scrollbar focus */
+*:focus {
+  scrollbar-color: var(--accent) var(--surface);
+}
+
+*:focus::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 6px;
+}
+
+/* Keyboard navigation help overlay */
+.keyboard-help {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 40px;
+  z-index: 10000;
+  display: none;
+  overflow-y: auto;
+}
+
+.keyboard-help.visible {
+  display: block;
+}
+
+.keyboard-help h2 {
+  margin-top: 0;
+  color: var(--accent);
+}
+
+.keyboard-help dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.keyboard-help dt {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.keyboard-help dd {
+  margin: 0;
+}
+
+.keyboard-help kbd {
+  background: var(--accent);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 2px;
+}

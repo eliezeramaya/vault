@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { X, Save } from 'lucide-react'
 
 export default function EditIslandSheet({ open, node, onClose, onSave, onConnect, onDuplicate, onDelete, onFocus }){

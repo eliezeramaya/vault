@@ -8,66 +8,399 @@
   font-display: swap;
 } */
 
+/* ============================================
+   DESIGN TOKENS SYSTEM - TEMA OSCURO/CLARO
+   ============================================ */
+
 :root {
-  --bg:#0a0a15;
-  --fg:#EAEAEA;
+  /* Legacy variables - mantener para compatibilidad */
+  --bg: #0a0a15;
+  --fg: #EAEAEA;
 }
 
-html, body, #root { height:100%; }
+/* TEMA OSCURO (por defecto) */
+:root,
+html[data-theme="dark"] {
+  /* === COLORES BASE === */
+  --primary: #f0375d;
+  --primary-hover: #e8295a;
+  --primary-pressed: #d61e52;
+  --on-primary: #ffffff;
+  
+  /* === SUPERFICIES === */
+  --bg-wrap: #0a0a15;
+  --surface: rgba(25, 35, 60, 0.85);
+  --surface-border: rgba(255, 255, 255, 0.15);
+  --surface-text: #e5e5e5;
+  
+  /* === PANELES === */
+  --panel-bg: rgba(15, 25, 45, 0.92);
+  --panel-border: rgba(255, 255, 255, 0.18);
+  
+  /* === TEXTO === */
+  --text: #eaeaea;
+  --text-secondary: rgba(234, 234, 234, 0.75);
+  --text-disabled: rgba(234, 234, 234, 0.4);
+  
+  /* === NOTAS ESPECÍFICAS === */
+  --note-bg: rgba(35, 45, 70, 0.88);
+  --note-border: rgba(255, 255, 255, 0.2);
+  
+  /* === COMPOSER === */
+  --composer-bg: rgba(40, 50, 80, 0.92);
+  --composer-text: #ffffff;
+  
+  /* === GRID === */
+  --grid-minor: rgba(255, 255, 255, 0.08);
+  --grid-medium: rgba(255, 255, 255, 0.12);
+  --grid-major: rgba(255, 255, 255, 0.18);
+  
+  /* === BOTONES === */
+  --btn-disabled-bg: rgba(100, 100, 100, 0.3);
+  --btn-disabled-fg: rgba(234, 234, 234, 0.5);
+  --btn-disabled-border: rgba(255, 255, 255, 0.1);
+  --btn-border: rgba(255, 255, 255, 0.2);
+  
+  /* === ACENTO/ACCENT === */
+  --accent: #ff77aa;
+  --accent-hover: #ff88bb;
+  --accent-pressed: #ff66aa;
+  --on-accent: #000000;
+  
+  /* === FOCUS Y ESTADOS === */
+  --focus: #4a9eff;
+  --focus-ring: #4a9eff;
+  
+  /* === ESTADOS SEMÁNTICOS === */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  
+  /* === ELEVACIÓN/SHADOWS === */
+  --elevation-0: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --elevation-1: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --elevation-2: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --elevation-3: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --hero-shadow: 0 12px 36px rgba(0,0,0,.22);
+  --hero-border: rgba(255, 255, 255, 0.35);
+  
+  /* === MAPAS 3D === */
+  --map-bg: #0a0a15;
+  --map-plane: #10162f;
+}
+
+/* TEMA CLARO */
+html[data-theme="light"] {
+  /* === COLORES BASE === */
+  --primary: #e8295a;
+  --primary-hover: #d61e52;
+  --primary-pressed: #c41a4a;
+  --on-primary: #ffffff;
+  
+  /* === SUPERFICIES === */
+  --bg-wrap: #f8f9fa;
+  --surface: rgba(255, 255, 255, 0.95);
+  --surface-border: rgba(0, 0, 0, 0.12);
+  --surface-text: #1a1a1a;
+  
+  /* === PANELES === */
+  --panel-bg: rgba(255, 255, 255, 0.98);
+  --panel-border: rgba(0, 0, 0, 0.15);
+  
+  /* === TEXTO === */
+  --text: #1a1a1a;
+  --text-secondary: rgba(26, 26, 26, 0.75);
+  --text-disabled: rgba(26, 26, 26, 0.4);
+  
+  /* === NOTAS ESPECÍFICAS === */
+  --note-bg: rgba(255, 255, 255, 0.92);
+  --note-border: rgba(0, 0, 0, 0.15);
+  
+  /* === COMPOSER === */
+  --composer-bg: rgba(250, 250, 250, 0.95);
+  --composer-text: #1a1a1a;
+  
+  /* === GRID === */
+  --grid-minor: rgba(0, 0, 0, 0.06);
+  --grid-medium: rgba(0, 0, 0, 0.1);
+  --grid-major: rgba(0, 0, 0, 0.15);
+  
+  /* === BOTONES === */
+  --btn-disabled-bg: rgba(200, 200, 200, 0.4);
+  --btn-disabled-fg: rgba(26, 26, 26, 0.4);
+  --btn-disabled-border: rgba(0, 0, 0, 0.08);
+  --btn-border: rgba(0, 0, 0, 0.15);
+  
+  /* === ACENTO/ACCENT === */
+  --accent: #e8295a;
+  --accent-hover: #d61e52;
+  --accent-pressed: #c41a4a;
+  --on-accent: #ffffff;
+  
+  /* === FOCUS Y ESTADOS === */
+  --focus: #2563eb;
+  --focus-ring: #2563eb;
+  
+  /* === ESTADOS SEMÁNTICOS === */
+  --success: #16a34a;
+  --warning: #ea580c;
+  --danger: #dc2626;
+  --info: #2563eb;
+  
+  /* === ELEVACIÓN/SHADOWS === */
+  --elevation-0: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --elevation-1: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --elevation-2: 0 8px 24px rgba(0, 0, 0, 0.20);
+  --elevation-3: 0 16px 48px rgba(0, 0, 0, 0.25);
+  --hero-shadow: 0 12px 36px rgba(0,0,0,.12);
+  --hero-border: rgba(0, 0, 0, 0.08);
+  
+  /* === MAPAS 3D === */
+  --map-bg: #f8f9fa;
+  --map-plane: #e9ecef;
+}
+
+/* ============================================
+   ESTILOS GLOBALES
+   ============================================ */
+
+html, body, #root { 
+  height: 100%; 
+}
+
 body {
-  margin:0;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  margin: 0;
+  background: var(--bg-wrap);
+  color: var(--text);
+  /* Fuente base consistente y legible */
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
+  font-size: 16px;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-button { font-family: inherit; }
+button { 
+  font-family: inherit; 
+  transition: all 0.2s ease;
+}
+
+/* ============================================
+   COMPONENTES INTERACTIVOS
+   ============================================ */
 
 /* Crystal Button enhancements */
-.crystal-btn::before, .crystal-btn::after {
-  content:'';
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  transition:inherit;
+.crystal-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.crystal-btn::before, 
+.crystal-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: inherit;
+  border-radius: inherit;
+}
+
 .crystal-btn::before {
   background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06));
   mix-blend-mode: screen;
-  opacity: .5;
-}
-.crystal-btn::after {
-  background: radial-gradient(120px 120px at 20% 0%, rgba(255,255,255,0.35), rgba(255,255,255,0) 60%);
-  opacity:.45;
-}
-.crystal-btn:hover {
-  border-color: rgba(255,255,255,0.6);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 28px rgba(0,0,0,.35);
-}
-.crystal-btn:active {
-  transform: translateY(0) scale(0.99);
-  box-shadow: 0 6px 16px rgba(0,0,0,.4) inset;
+  opacity: 0.5;
 }
 
-/* Crystal note chips: reuse highlights */
-.eh-note::before, .eh-note::after {
-  content:'';
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  transition:inherit;
+.crystal-btn::after {
+  background: radial-gradient(120px 120px at 20% 0%, rgba(255,255,255,0.35), rgba(255,255,255,0) 60%);
+  opacity: 0.45;
 }
+
+.crystal-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--elevation-2);
+}
+
+.crystal-btn:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: var(--elevation-1);
+}
+
+.crystal-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Crystal note chips */
+.eh-note {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.eh-note::before, 
+.eh-note::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: inherit;
+  border-radius: inherit;
+}
+
 .eh-note::before {
   background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
   mix-blend-mode: screen;
-  opacity:.45;
+  opacity: 0.45;
 }
+
 .eh-note::after {
   background: radial-gradient(240px 240px at 20% 0%, rgba(255,255,255,0.28), rgba(255,255,255,0) 60%);
-  opacity:.35;
+  opacity: 0.35;
 }
+
 .eh-note:hover {
-  border-color: rgba(255,255,255,0.6);
-  box-shadow: 0 12px 28px rgba(0,0,0,.35);
+  border-color: var(--accent);
+  box-shadow: var(--elevation-2);
+  transform: scale(1.02);
+}
+
+.eh-note:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Animación de ping para notas */
+.eh-note.ping {
+  animation: ping 0.5s cubic-bezier(0, 0, 0.2, 1);
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(1);
+    box-shadow: var(--elevation-1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px rgba(240, 55, 93, 0.3), var(--elevation-2);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: var(--elevation-1);
+  }
+}
+
+/* ============================================
+   UTILIDADES Y HELPERS
+   ============================================ */
+
+/* Transiciones suaves para cambios de tema */
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Skip link para accesibilidad */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--primary);
+  color: var(--on-primary);
+  padding: 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  z-index: 1000;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* Mejores scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Focus visible mejorado */
+*:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Reducir motion para usuarios sensibles */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 768px) {
+  .eh-panel { 
+    width: min(96vw, 96vh); 
+    border-radius: 16px; 
+    padding: 12px; 
+  }
+  
+  .crystal-btn:hover {
+    transform: none; /* Evitar hover problemático en touch */
+  }
+  
+  .eh-note:hover {
+    transform: none;
+  }
+}
+
+/* Ajustes para pantallas muy pequeñas */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .eh-note {
+    width: 100px;
+    height: 100px;
+    font-size: 10px;
+  }
+}
+
+/* Modo de alto contraste */
+@media (prefers-contrast: high) {
+  :root {
+    --surface-border: rgba(255, 255, 255, 0.3);
+    --panel-border: rgba(255, 255, 255, 0.4);
+    --text: #ffffff;
+  }
+  
+  html[data-theme="light"] {
+    --surface-border: rgba(0, 0, 0, 0.3);
+    --panel-border: rgba(0, 0, 0, 0.4);
+    --text: #000000;
+  }
 }

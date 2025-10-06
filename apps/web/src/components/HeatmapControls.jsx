@@ -47,9 +47,9 @@ export default function HeatmapControls({
     position: "absolute",
     top: 'max(16px, env(safe-area-inset-top))',
     right: 'max(16px, env(safe-area-inset-right))',
-    width: 'min(92vw, 320px)',
-    padding: '12px',
-    borderRadius: 12,
+    width: 'min(92vw, 360px)',
+    padding: '14px',
+    borderRadius: 14,
   background: 'var(--surface)',
   boxShadow: '0 8px 24px rgba(0,0,0,.35)',
   border: '1px solid var(--surface-border)',
@@ -59,11 +59,11 @@ export default function HeatmapControls({
     fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
   zIndex: 20,
   };
-  const row = { display: "grid", gridTemplateColumns: "96px 1fr 56px", alignItems: "center", gap: 12, marginBottom: 12 };
-  const label = { fontSize: 12, letterSpacing: .2, opacity: .9 };
-  const val = { fontSize: 12, textAlign: "right", opacity: .9 };
+  const row = { display: "grid", gridTemplateColumns: "120px 1fr 64px", alignItems: "center", gap: 14, marginBottom: 14 };
+  const label = { fontSize: 12, fontWeight: 700, letterSpacing: .2, opacity: .95 };
+  const val = { fontSize: 12, textAlign: "right", opacity: .9, fontVariantNumeric:'tabular-nums' };
   const slider = { width: '100%', height: 44, accentColor: 'var(--accent)', cursor: 'pointer', touchAction: 'none', WebkitAppearance:'none', background:'transparent' };
-  const toggleWrap = { display: "flex", alignItems: "center", gap: 10, marginTop: 6 };
+  const toggleWrap = { display: "flex", alignItems: "center", gap: 12, marginTop: 8 };
 
   return (
     <div
@@ -82,7 +82,7 @@ export default function HeatmapControls({
       `}</style>
 
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, marginBottom: isCompact ? 4 : 8}}>
-        <h2 id="hudTitle" style={{ fontWeight: 700, margin: 0, letterSpacing: .3, fontSize: 14 }}>Controles</h2>
+  <h2 id="hudTitle" style={{ fontWeight: 800, margin: 0, letterSpacing: .3, fontSize: 14 }}>Controles</h2>
         <div style={{display:'flex', gap:12}}>
           <button
             type="button"
@@ -118,7 +118,7 @@ export default function HeatmapControls({
       {/* Body */}
       <div id="hudControlsBody" style={{ display: expanded ? 'block' : 'none' }}>
       {/* Sección: Calor */}
-      <div style={{marginTop:8, marginBottom:10}}>
+  <div style={{marginTop:8, marginBottom:10}}>
   <div style={{fontSize:12, fontWeight:800, letterSpacing:.3, opacity:.9, marginBottom:8, textTransform:'uppercase'}}>Calor</div>
 
       <div style={row}>
@@ -199,7 +199,7 @@ export default function HeatmapControls({
       </div>
 
       {/* Sección: Vista */}
-      <div style={{marginTop:12}}>
+  <div style={{marginTop:12}}>
   <div style={{fontSize:12, fontWeight:800, letterSpacing:.3, opacity:.9, marginBottom:8, textTransform:'uppercase'}}>Vista</div>
         <div style={{display:'grid', gap:12}}>
           <label htmlFor="autoRot" style={{display:'flex', alignItems:'center', gap:12, fontSize:12, opacity:.9, cursor:'pointer'}}>

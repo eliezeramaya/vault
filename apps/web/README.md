@@ -9,7 +9,7 @@ Aplicación React + Vite con una matriz de Eisenhower “liquid‑glass”, acce
 ## Instalar y ejecutar
 ```bash
 npm ci
-npm run dev      # http://localhost:3000/
+npm run dev      # http://localhost:3000/vault/ (usar base)
 
 # Producción
 npm run build
@@ -50,7 +50,28 @@ Ejemplos de uso:
 
 ## Despliegue (GitHub Pages)
 - Configurado con `base: '/vault/'` y `start_url/scope` en el manifest.
-- Workflow `pages.yml` publica `dist` y añade `404.html` como fallback SPA.
+- Workflow `deploy-pages.yml` publica `dist` y añade `404.html` como fallback SPA.
 
 ## Notas
 - Las antiguas vistas 3D (globo/heatmap) siguen en el código para referencia; la vista por defecto es la matriz.
+
+## Métricas personales (FQI, Streak, %Q1/Q2)
+
+Incluye un panel de hábitos ligero para auto-seguimiento:
+
+- Temporizador de foco con 1 clic y chips 15/25/45m.
+- Termómetro FQI semanal (0–1) con flecha vs semana anterior.
+- Scorecard semanal con FQI, Streak de días y % Q1/Q2 completadas.
+- CTA para programar 2 bloques Q2 para mañana 10:00.
+
+Datos locales en `localStorage`:
+
+- `tasks_v1`: tareas (id, quadrant, estimate_min, scheduled_for, completed_at).
+- `focus_sessions_v1`: sesiones (planned_min, actual_min, quadrant, started_at, ended_at).
+- `analytics_events_v1`: eventos (focus_start/end, task_complete, intention_add_block, suggestion_accepted).
+
+FQI (Focus Quality Index):
+
+FQI = (Min_Q1 + 0.8·Min_Q2 − 0.4·(Min_Q3 + Min_Q4)) / Min_totales, clamp 0..1.
+
+Resetear datos: limpiar `localStorage` del navegador o llamar a `resetMetricsData()` en la consola.

@@ -1,0 +1,315 @@
+Attached HTML and CSS Context
+
+<h1 style="font-size: 24px; font-weight: 700; margin: 0px 0px 16px; color: var(--text);">¡Oops! Algo salió mal</h1>
+
+
+/* Inline style */
+element {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0px 0px 16px;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 0px;
+  margin-right: 0px;
+  margin-bottom: 16px;
+  margin-left: 0px;
+  color: var(--text);
+}
+
+/* Matched Rule from user-agent */
+h1 {
+  display: block;
+  font-size: 2em;
+  margin-block-start: 0.67em;
+  margin-block-end: 0.67em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  font-weight: bold;
+}
+
+/* Matched Rule from user-agent */
+address, blockquote, center, div, figure, figcaption, footer, form, header, hr, legend, listing, main, p, plaintext, pre, summary, xmp, article, aside, h1, h2, h3, h4, h5, h6, hgroup, nav, section, search, table, caption, colgroup, col, thead, tbody, tfoot, tr, td, th, dir, dd, dl, dt, menu, ol, ul, li, bdi, output, [dir="ltr" i], [dir="rtl" i], [dir="auto" i] {
+  unicode-bidi: isolate;
+}
+
+/* Matched Rule from regular */
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Inherited from ancestor level 1 (user-agent) */
+div {
+  display: block;
+}
+
+/* Inherited from ancestor level 1 (user-agent) */
+address, blockquote, center, div, figure, figcaption, footer, form, header, hr, legend, listing, main, p, plaintext, pre, summary, xmp, article, aside, h1, h2, h3, h4, h5, h6, hgroup, nav, section, search, table, caption, colgroup, col, thead, tbody, tfoot, tr, td, th, dir, dd, dl, dt, menu, ol, ul, li, bdi, output, [dir="ltr" i], [dir="rtl" i], [dir="auto" i] {
+  unicode-bidi: isolate;
+}
+
+/* Inherited from ancestor level 1 (regular) */
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Inherited from ancestor level 2 (user-agent) */
+div {
+  display: block;
+}
+
+/* Inherited from ancestor level 2 (user-agent) */
+address, blockquote, center, div, figure, figcaption, footer, form, header, hr, legend, listing, main, p, plaintext, pre, summary, xmp, article, aside, h1, h2, h3, h4, h5, h6, hgroup, nav, section, search, table, caption, colgroup, col, thead, tbody, tfoot, tr, td, th, dir, dd, dl, dt, menu, ol, ul, li, bdi, output, [dir="ltr" i], [dir="rtl" i], [dir="auto" i] {
+  unicode-bidi: isolate;
+}
+
+/* Inherited from ancestor level 2 (regular) */
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Inherited from ancestor level 3 (user-agent) */
+div {
+  display: block;
+}
+
+/* Inherited from ancestor level 3 (user-agent) */
+address, blockquote, center, div, figure, figcaption, footer, form, header, hr, legend, listing, main, p, plaintext, pre, summary, xmp, article, aside, h1, h2, h3, h4, h5, h6, hgroup, nav, section, search, table, caption, colgroup, col, thead, tbody, tfoot, tr, td, th, dir, dd, dl, dt, menu, ol, ul, li, bdi, output, [dir="ltr" i], [dir="rtl" i], [dir="auto" i] {
+  unicode-bidi: isolate;
+}
+
+/* Inherited from ancestor level 3 (regular) */
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Inherited from ancestor level 3 (regular) */
+html, body, #root {
+  height: 100%;
+  height: 100%;
+}
+
+/* Inherited from ancestor level 3 (regular) */
+html, body, #root {
+  height: 100%;
+  height: 100%;
+}
+
+/* Inherited from ancestor level 4 (user-agent) */
+body {
+  display: block;
+  margin-top: 8px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  margin-left: 8px;
+}
+
+/* Inherited from ancestor level 4 (regular) */
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Inherited from ancestor level 4 (regular) */
+html, body, #root {
+  height: 100%;
+  height: 100%;
+}
+
+/* Inherited from ancestor level 4 (regular) */
+body {
+  margin: 0;
+  background: #0a0a15;
+  color: #EAEAEA;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto;
+  margin-top: 0px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  margin-left: 0px;
+  background-image: initial;
+  background-position-x: initial;
+  background-position-y: initial;
+  background-size: initial;
+  background-repeat: initial;
+  background-attachment: initial;
+  background-origin: initial;
+  background-clip: initial;
+  background-color: rgb(10, 10, 21);
+  color: rgb(234, 234, 234);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
+}
+
+/* Inherited from ancestor level 4 (regular) */
+html, body, #root {
+  height: 100%;
+  height: 100%;
+}
+
+/* Inherited from ancestor level 4 (regular) */
+body {
+  margin: 0;
+  background: var(--bg-wrap);
+  color: var(--text);
+  font-family: Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  margin-top: 0px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  margin-left: 0px;
+  color: var(--text);
+  font-family: Proggy, ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  transition-behavior: normal, normal;
+  transition-duration: 0.2s, 0.2s;
+  transition-timing-function: ease, ease;
+  transition-delay: 0s, 0s;
+  transition-property: background-color, color;
+}
+
+/* Inherited from ancestor level 5 (user-agent) */
+html {
+  display: block;
+}
+
+/* Inherited from ancestor level 5 (user-agent) */
+:root {
+  view-transition-name: root;
+}
+
+/* Inherited from ancestor level 5 (regular) */
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Inherited from ancestor level 5 (regular) */
+html, body, #root {
+  height: 100%;
+  height: 100%;
+}
+
+/* Inherited from ancestor level 5 (regular) */
+html, body, #root {
+  height: 100%;
+  height: 100%;
+}
+
+/* Inherited from ancestor level 5 (regular) */
+:root {
+  --bg: #0a0a15;
+  --fg: #EAEAEA;
+  --bg: #0a0a15;
+  --fg: #EAEAEA;
+}
+
+/* Inherited from ancestor level 5 (regular) */
+:root, html[data-theme="dark"] {
+  --primary: #f0375d;
+  --primary-hover: #e8295a;
+  --primary-pressed: #d61e52;
+  --on-primary: #ffffff;
+  --bg-wrap: #0a0a15;
+  --surface: rgba(25, 35, 60, 0.85);
+  --surface-border: rgba(255, 255, 255, 0.15);
+  --surface-text: #e5e5e5;
+  --panel-bg: rgba(15, 25, 45, 0.92);
+  --panel-border: rgba(255, 255, 255, 0.18);
+  --text: #eaeaea;
+  --text-secondary: rgba(234, 234, 234, 0.75);
+  --text-disabled: rgba(234, 234, 234, 0.4);
+  --note-bg: rgba(35, 45, 70, 0.88);
+  --note-border: rgba(255, 255, 255, 0.2);
+  --composer-bg: rgba(40, 50, 80, 0.92);
+  --composer-text: #ffffff;
+  --grid-minor: rgba(255, 255, 255, 0.08);
+  --grid-medium: rgba(255, 255, 255, 0.12);
+  --grid-major: rgba(255, 255, 255, 0.18);
+  --btn-disabled-bg: rgba(100, 100, 100, 0.3);
+  --btn-disabled-fg: rgba(234, 234, 234, 0.5);
+  --btn-disabled-border: rgba(255, 255, 255, 0.1);
+  --btn-border: rgba(255, 255, 255, 0.2);
+  --accent: #ff77aa;
+  --accent-hover: #ff88bb;
+  --accent-pressed: #ff66aa;
+  --on-accent: #000000;
+  --focus: #4a9eff;
+  --focus-ring: #4a9eff;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --elevation-0: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --elevation-1: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --elevation-2: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --elevation-3: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --map-bg: #0a0a15;
+  --map-plane: #10162f;
+  --primary: #f0375d;
+  --primary-hover: #e8295a;
+  --primary-pressed: #d61e52;
+  --on-primary: #ffffff;
+  --bg-wrap: #0a0a15;
+  --surface: rgba(25, 35, 60, 0.85);
+  --surface-border: rgba(255, 255, 255, 0.15);
+  --surface-text: #e5e5e5;
+  --panel-bg: rgba(15, 25, 45, 0.92);
+  --panel-border: rgba(255, 255, 255, 0.18);
+  --text: #eaeaea;
+  --text-secondary: rgba(234, 234, 234, 0.75);
+  --text-disabled: rgba(234, 234, 234, 0.4);
+  --note-bg: rgba(35, 45, 70, 0.88);
+  --note-border: rgba(255, 255, 255, 0.2);
+  --composer-bg: rgba(40, 50, 80, 0.92);
+  --composer-text: #ffffff;
+  --grid-minor: rgba(255, 255, 255, 0.08);
+  --grid-medium: rgba(255, 255, 255, 0.12);
+  --grid-major: rgba(255, 255, 255, 0.18);
+  --btn-disabled-bg: rgba(100, 100, 100, 0.3);
+  --btn-disabled-fg: rgba(234, 234, 234, 0.5);
+  --btn-disabled-border: rgba(255, 255, 255, 0.1);
+  --btn-border: rgba(255, 255, 255, 0.2);
+  --accent: #ff77aa;
+  --accent-hover: #ff88bb;
+  --accent-pressed: #ff66aa;
+  --on-accent: #000000;
+  --focus: #4a9eff;
+  --focus-ring: #4a9eff;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --elevation-0: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --elevation-1: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --elevation-2: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --elevation-3: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --map-bg: #0a0a15;
+  --map-plane: #10162f;
+}
