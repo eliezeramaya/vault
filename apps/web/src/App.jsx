@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
-import { Sun, Moon, HelpCircle, MoreHorizontal } from 'lucide-react'
+import { Sun, Moon, HelpCircle, MoreHorizontal, User, Home as HomeIcon, Map as MapIcon, Grid3X3, Timer as TimerIcon, Settings as SettingsIcon } from 'lucide-react'
 import { ErrorProvider } from './contexts/ErrorContext'
 import { useSafeStorage, useSafeOperation } from './hooks/useSafeOperations'
 import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardNavigation'
 import ErrorBoundary from './components/ErrorBoundary'
 import Globe from './components/Globe'
 import SphereMap from './components/SphereMap'
+import FocusLoopBar from './components/FocusLoopBar'
+import { FocusLoopProvider } from './contexts/FocusLoopContext'
 import EisenhowerPanel from './components/EisenhowerPanel'
 import Welcome from './components/Welcome'
 import Onboarding from './components/Onboarding'
@@ -19,6 +21,7 @@ import NotificationCenter from './components/NotificationCenter'
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp'
 import MobileTutorial from './components/MobileTutorial/MobileTutorial'
 import { useMobileTutorial } from './hooks/useMobileTutorial'
+import Sidebar from './components/Sidebar'
 
 // Stable theme options at module scope to avoid identity changes across renders
 const VALID_THEMES = ['light', 'dark']
@@ -42,8 +45,50 @@ function AppContent(){
   const menuBtnRef = useRef(null)
   const headerRef = useRef(null)
   const [bottomNavH, setBottomNavH] = useState(0)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isNarrow, setIsNarrow] = useState(false)
+  const [isEmbedded, setIsEmbedded] = useState(false)
+
+  // Sidebar: default open on desktop, closed on mobile; remember user preference
+  useEffect(()=>{
+    try {
+      const saved = safeGetItem('sidebarOpen')
+      if (typeof saved === 'boolean') {
+        setSidebarOpen(saved)
+        return
+      }
+      if (typeof saved === 'string') {
+        if (saved === 'true' || saved === 'false') { setSidebarOpen(saved === 'true'); return }
+      }
+      const mq = window.matchMedia('(max-width: 768px)')
+      setSidebarOpen(!mq.matches)
+    } catch { /* ignore */ }
+  }, [safeGetItem])
+
+  // Track viewport width bucket to compute content offset for sidebar
+  useEffect(()=>{
+    try {
+      const mq = window.matchMedia('(max-width: 768px)')
+      const apply = (e)=> setIsNarrow(!!e.matches)
+      apply(mq)
+      mq.addEventListener('change', apply)
+      return ()=> mq.removeEventListener('change', apply)
+    } catch { /* ignore */ }
+  }, [])
+
+  const toggleSidebar = useCallback(()=>{
+    setSidebarOpen(prev => { const next = !prev; try { safeSetItem('sidebarOpen', next) } catch {} return next })
+  }, [safeSetItem])
 
   useEffect(()=>{ /* cleanup placeholder */ },[])
+
+  // Detect embedded mode (?embed=1) so native apps can control nav and we hide web bottom bar
+  useEffect(()=>{
+    try {
+      const sp = new URLSearchParams(window.location.search)
+      setIsEmbedded(sp.get('embed') === '1')
+    } catch { /* ignore */ }
+  }, [])
 
   // Enhanced theme system with system preference detection and validation
   const THEME_STORAGE_KEY = 'vault-theme-preference'
@@ -121,6 +166,28 @@ function AppContent(){
     const savedMode = safeGetItem('mapMode')
     if (savedMode === 'plane' || savedMode === 'sphere') setMapMode(savedMode)
   }, [safeGetItem])
+
+  // Hash-based navigation bridge for native embedding (#home/#map/#matrix/etc)
+  useEffect(()=>{
+    const valid = new Set(['home','map','matrix','pomodoro','settings','scorecard'])
+    const apply = ()=>{
+      try {
+        const h = (window.location.hash||'').replace(/^#/, '')
+        if (valid.has(h)) setView(h)
+      } catch { /* ignore */ }
+    }
+    apply()
+    window.addEventListener('hashchange', apply)
+    return ()=> window.removeEventListener('hashchange', apply)
+  }, [])
+
+  // Keep hash in sync when view changes (helps deep links and native webview control)
+  useEffect(()=>{
+    try {
+      const h = (window.location.hash||'').replace(/^#/, '')
+      if (h !== view) history.replaceState(null, '', `#${view}`)
+    } catch { /* ignore */ }
+  }, [view])
 
   // Enhanced theme persistence with validation and error handling
   useEffect(()=>{
@@ -352,6 +419,26 @@ function AppContent(){
 
   return (
     <div className="app" style={{position:'relative'}}>
+      {/* Left Sidebar */}
+      <Sidebar
+        open={sidebarOpen}
+        onToggle={toggleSidebar}
+        currentView={view}
+        onSelect={(v)=> setView(v)}
+      />
+      {/* Mobile backdrop when sidebar is open */}
+      {isNarrow && sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Cerrar menú"
+          onClick={toggleSidebar}
+          style={{
+            position:'fixed', inset:0, zIndex:21,
+            background:'rgba(0,0,0,.35)', border:'none', padding:0, margin:0,
+            cursor:'pointer'
+          }}
+        />
+      )}
       {/* Top navigation bar (persistent) */}
       {/* Skip link */}
       <a href="#main" className="skip-link">Saltar al contenido</a>
@@ -360,7 +447,7 @@ function AppContent(){
         position:'sticky', top:'max(10px, env(safe-area-inset-top))',
         zIndex:18,
         pointerEvents:'none',
-        paddingLeft:'max(10px, env(safe-area-inset-left))',
+        paddingLeft:`max(${(isNarrow ? 0 : (sidebarOpen ? 260 : 86))}px, env(safe-area-inset-left))`,
         paddingRight:'max(10px, env(safe-area-inset-right))'
       }}>
         <div style={{
@@ -488,6 +575,11 @@ function AppContent(){
                 fontWeight:700, cursor:'pointer', lineHeight:1
               }}
             >{theme==='dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</button>
+            {/* Profile mini */}
+            <div style={{display:'flex', alignItems:'center', gap:8, background:'var(--surface)', color:'var(--surface-text)', border:'1px solid var(--surface-border)', padding:'6px 10px', borderRadius:10}}>
+              <div aria-hidden="true" style={{width:28, height:28, borderRadius:'50%', background:'linear-gradient(135deg, #3b82f6, #22c55e)', display:'grid', placeItems:'center', color:'#fff', fontWeight:900}}>U</div>
+              <span className="hide-on-compact" style={{fontWeight:800}}>usuario</span>
+            </div>
             {/* Menu */}
             <div style={{ position:'relative' }}>
               <button
@@ -565,7 +657,13 @@ function AppContent(){
       )}
 
       {/* Main content area with tabpanels */}
-  <main id="main" role="main" style={{position:'relative', paddingTop: 0, paddingBottom: (view==='matrix' || view==='home' || view==='pomodoro' || view==='settings' || view==='scorecard') ? (bottomNavH + 12) : 0}}>
+  <main id="main" role="main" style={{
+        position:'relative',
+        paddingTop: 0,
+        paddingLeft: (isNarrow ? 0 : (sidebarOpen ? 260 : 86)),
+        transition:'padding-left .18s ease',
+        paddingBottom: (view==='matrix' || view==='home' || view==='pomodoro' || view==='settings' || view==='scorecard') ? (bottomNavH + 12) : 0
+      }}>
         {/* Home */}
         <div role="tabpanel" id="panel-home" aria-labelledby="tab-home" hidden={view!=='home'}>
           {view==='home' && <HomePanel />}
@@ -604,7 +702,12 @@ function AppContent(){
 
         {/* Matrix */}
         <div role="tabpanel" id="panel-matrix" aria-labelledby="tab-matrix" hidden={view!=='matrix'}>
-          {view==='matrix' && <EisenhowerPanel />}
+          {view==='matrix' && (
+            <>
+              <FocusLoopBar />
+              <EisenhowerPanel />
+            </>
+          )}
         </div>
 
         {/* Pomodoro */}
@@ -630,6 +733,32 @@ function AppContent(){
       <Onboarding open={showOb} onClose={()=>setShowOb(false)} />
       <KeyboardShortcutsHelp show={showKeyboardHelp} onClose={()=>setShowKeyboardHelp(false)} />
       <Preloader progress={loadPct} visible={loading && view==='map'} />
+      {/* Bottom navigation (mobile icons only) */}
+      {isNarrow && !isEmbedded && (
+        <nav className="nav-bottom" aria-label="Navegación" style={{
+          position:'fixed', left:12, right:12, bottom:12, height:64,
+          display:'flex', justifyContent:'space-around', alignItems:'center', gap:8,
+          background:'var(--panel-bg)', border:'1px solid var(--panel-border)', color:'var(--text)',
+          borderRadius:14, boxShadow:'0 12px 36px rgba(0,0,0,.22)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)',
+          zIndex:24, pointerEvents:'auto'
+        }}>
+          <button type="button" aria-label="Inicio" onClick={()=> setView('home')} style={{ background:'transparent', border:'none', color: view==='home' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
+            <HomeIcon size={22} aria-hidden />
+          </button>
+          <button type="button" aria-label="Matriz" onClick={()=> setView('matrix')} style={{ background:'transparent', border:'none', color: view==='matrix' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
+            <Grid3X3 size={22} aria-hidden />
+          </button>
+          <button type="button" aria-label="Mapa" onClick={()=> setView('map')} style={{ background:'transparent', border:'none', color: view==='map' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
+            <MapIcon size={22} aria-hidden />
+          </button>
+          <button type="button" aria-label="Pomodoro" onClick={()=> setView('pomodoro')} style={{ background:'transparent', border:'none', color: view==='pomodoro' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
+            <TimerIcon size={22} aria-hidden />
+          </button>
+          <button type="button" aria-label="Ajustes" onClick={()=> setView('settings')} style={{ background:'transparent', border:'none', color: view==='settings' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
+            <SettingsIcon size={22} aria-hidden />
+          </button>
+        </nav>
+      )}
       {/* FAB visible solo en mapa plano */}
       {view === 'map' && mapMode === 'plane' && (
         <>
@@ -639,7 +768,7 @@ function AppContent(){
             aria-label="Crear nueva isla"
             title="Crear nueva isla"
             style={{
-              position:'absolute', right:'max(16px, env(safe-area-inset-right))', bottom:'max(16px, env(safe-area-inset-bottom))',
+              position:'absolute', right:'max(16px, env(safe-area-inset-right))', bottom: isNarrow ? (bottomNavH + 20) : 'max(16px, env(safe-area-inset-bottom))',
               width:56, height:56, borderRadius:28, cursor:'pointer', zIndex:15,
               background:'var(--primary)', color:'var(--on-primary)', border:'none', boxShadow:'0 10px 26px rgba(240,55,93,.35)', fontSize:24, fontWeight:900
             }}
@@ -679,7 +808,9 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ErrorProvider>
-        <AppContent />
+        <FocusLoopProvider>
+          <AppContent />
+        </FocusLoopProvider>
       </ErrorProvider>
     </ErrorBoundary>
   )

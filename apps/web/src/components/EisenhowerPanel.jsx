@@ -24,7 +24,8 @@ const NoteItem = React.memo(({
   onWeight,
   onWeightKeyDown,
   onSetWeight,
-  renderTextWithHighlight
+  renderTextWithHighlight,
+  onStartFocus
 }) => {
   if (isEditing) return null
   
@@ -79,6 +80,19 @@ const NoteItem = React.memo(({
           }}
         >
           <Scale size={16} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          aria-label="Empezar foco (25m)"
+          title="Foco 25m en Q importante/urgente"
+          onPointerDown={(e)=>{ e.stopPropagation() }}
+          onClick={()=> onStartFocus?.(note)}
+          style={{
+            background:'var(--primary)', color:'var(--on-primary)', border:'none',
+            borderRadius:4, padding:'2px 8px', fontSize:10, cursor:'pointer', fontWeight:800
+          }}
+        >
+          Foco
         </button>
         {weightFor === note.id && (
           <div
@@ -1290,6 +1304,8 @@ const EisenhowerPanel = React.memo(() => {
                 const isEditing = composer && composer.id === n.id
                 const visible = (visibleNotes.includes(n) || isEditing)
                 if (!visible) return null
+                const q = getQuadrant(n.col, n.row)
+                const quadrantMap = { TL:'Q1', TR:'Q2', BL:'Q3', BR:'Q4' }
                 return (
                   <React.Fragment key={n.id}>
                     <NoteItem
@@ -1390,6 +1406,12 @@ const EisenhowerPanel = React.memo(() => {
                         setSrMsg(`Importancia cambiada a ${v}`)
                       }}
                       renderTextWithHighlight={renderTextWithHighlight}
+                      onStartFocus={(note)=>{
+                        try {
+                          const ev = new CustomEvent('focus:start', { detail: { minutes:25, taskId: note.id, quadrant: quadrantMap[q] || 'Q2' } })
+                          window.dispatchEvent(ev)
+                        } catch {}
+                      }}
                       setNotes={setNotes}
                       setSrMsg={setSrMsg}
                       setSelectedId={setSelectedId}
