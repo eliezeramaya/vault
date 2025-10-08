@@ -5,7 +5,8 @@ import { useSafeStorage, useSafeOperation } from './hooks/useSafeOperations'
 import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardNavigation'
 import ErrorBoundary from './components/ErrorBoundary'
 import Globe from './features/map/Globe'
-import SphereMap from './features/map/SphereMap'
+// Lazy-load the heavy 3D map to reduce initial bundle on mobile
+const SphereMap = React.lazy(() => import('./features/map/SphereMap'))
 import FocusLoopBar from './features/focus/FocusLoopBar'
 import { FocusLoopProvider } from './features/focus/FocusLoopContext'
 import EisenhowerPanel from './features/matrix/EisenhowerPanel'
@@ -354,6 +355,17 @@ function AppContent(){
     }
   }, [view, mapMode])
 
+  // Idle prefetch: when on Map (plane mode), prefetch SphereMap chunk after a short delay
+  useEffect(()=>{
+    let t
+    try {
+      if (view==='map' && mapMode==='plane') {
+        t = setTimeout(() => { import('./features/map/SphereMap') }, 2000)
+      }
+    } catch { /* ignore */ }
+    return ()=> { if (t) clearTimeout(t) }
+  }, [view, mapMode])
+
 
 
   // Demo feature removed per request
@@ -682,7 +694,13 @@ function AppContent(){
                   showControls={!showWelcome}
                 />
               ) : (
-                <SphereMap showPanel={!showWelcome} />
+                <React.Suspense fallback={(
+                  <div style={{ position:'absolute', inset:12, zIndex:17, display:'inline-flex', alignItems:'center', gap:10, background:'var(--panel-bg)', border:'1px solid var(--panel-border)', borderRadius:12, padding:'10px 12px', boxShadow:'0 10px 28px rgba(0,0,0,.28)' }}>
+                    <span role="status" aria-live="polite">Cargando 3D…</span>
+                  </div>
+                )}>
+                  <SphereMap showPanel={!showWelcome} />
+                </React.Suspense>
               )}
               {/* Toggle de modo: Plano / Esfera */}
               <div style={{ position:'absolute', top:'max(12px, env(safe-area-inset-top))', right:'max(12px, env(safe-area-inset-right))', zIndex:17, display:'flex', gap:6, background:'var(--panel-bg)', border:'1px solid var(--panel-border)', borderRadius:12, padding:6, boxShadow:'0 10px 28px rgba(0,0,0,.28)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' }}>
