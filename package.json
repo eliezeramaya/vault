@@ -1,0 +1,14 @@
+{
+  "name": "vault-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint:all": "node ./scripts/lint-all.mjs",
+    "typecheck:all": "node ./scripts/typecheck-all.mjs",
+    "analyze:bundle": "node ./scripts/analyze-bundle.mjs",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
+}

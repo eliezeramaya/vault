@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { withBase } from '../../config/vite.base.mjs'
 
-export default defineConfig({
+export default withBase(defineConfig({
   base: '/vault/',              // Es necesario para servir en Pages (GitHub Pages)
   plugins: [
     react(),
@@ -41,5 +42,5 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     coverage: { reporter: ['text', 'html'], include: ['src/lib/**'] }
   }
-})
+}))
 
