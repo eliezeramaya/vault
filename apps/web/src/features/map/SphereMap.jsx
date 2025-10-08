@@ -26,8 +26,7 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
-// 3D Sphere visualization: 3 concentric layers of star points + wire spheres + thick edges
-// Ported and adapted from vault/examples/index.html to React
+// SphereMap optimized: shared geometries/materials, event-driven render, simple LOD, throttled picking
 
 function useCssVar(name, fallback) {
   const [v, setV] = useState(fallback)
@@ -69,26 +68,20 @@ function hashStringToSeed(str) {
   return h >>> 0
 }
 function randomPointOnSphere(r, rnd) {
-  const u = rnd()
-  const v = rnd()
+  const u = rnd(),
+    v = rnd()
   const theta = 2 * Math.PI * u
   const phi = Math.acos(2 * v - 1)
   const s = Math.sin(phi)
   return new Vector3(r * s * Math.cos(theta), r * s * Math.sin(theta), r * Math.cos(phi))
 }
-function hexToInt(hex) {
-  return parseInt(hex.replace('#', ''), 16)
-}
-function intToHex(int) {
-  return '#' + int.toString(16).padStart(6, '0')
-}
+const hexToInt = hex => parseInt(hex.replace('#', ''), 16)
 
 export default function SphereMap({ showPanel = true }) {
   const mountRef = useRef(null)
   const tooltipRef = useRef(null)
   const pingRef = useRef(null)
 
-  // Theme-aware colors
   const bgCol = useCssVar('--map-bg', '#0a0a15')
   const gridCol = useCssVar('--grid-medium', '#2a3a7a')
 
@@ -116,7 +109,6 @@ export default function SphereMap({ showPanel = true }) {
     edgeColor: '#6ea2ff',
   })
 
-  // Internals
   const stateRef = useRef({
     renderer: null,
     scene: null,
@@ -130,12 +122,9 @@ export default function SphereMap({ showPanel = true }) {
     starTex: null,
     raycaster: new Raycaster(),
     mouse: new Vector2(),
-    hovered: null,
-    selected: null,
     seed: null,
   })
 
-  // Build star texture once
   function getStarTexture() {
     const s = stateRef.current
     if (s.starTex) return s.starTex
@@ -187,7 +176,6 @@ export default function SphereMap({ showPanel = true }) {
     const rnd = mulberry32(((s.seed >>> 0) + 0x9e3779b9) >>> 0)
     const layerMap = { 1: [], 2: [], 3: [] }
     for (const n of s.nodes) layerMap[n.layer].push(n)
-    // k-NN intra-layer
     for (const layer of [1, 2, 3]) {
       const arr = layerMap[layer]
       for (let i = 0; i < arr.length; i++) {
@@ -268,7 +256,6 @@ export default function SphereMap({ showPanel = true }) {
   function buildGeometries() {
     const s = stateRef.current
     clearScene()
-    // points
     const tex = getStarTexture()
     const sizes = [ui.size1, ui.size2, ui.size3]
     for (const layer of [1, 2, 3]) {
@@ -277,6 +264,9 @@ export default function SphereMap({ showPanel = true }) {
       const positions = new Float32Array(arr.length * 3)
       for (let i = 0; i < arr.length; i++) positions.set(arr[i].position, i * 3)
       geo.setAttribute('position', new BufferAttribute(positions, 3))
+      try {
+        geo.setDrawRange(0, arr.length)
+      } catch {}
       const opacity = Math.min(1, Math.max(0.05, ui.brightness))
       const mat = new PointsMaterial({
         size: sizes[layer - 1],
@@ -295,7 +285,6 @@ export default function SphereMap({ showPanel = true }) {
       s.scene.add(pts)
       s.pointsLayers.push(pts)
     }
-    // wire spheres
     for (const R of [ui.r1, ui.r2, ui.r3]) {
       const g = new WireframeGeometry(new SphereGeometry(R, 24, 16))
       const w = new LineSegments(
@@ -305,7 +294,6 @@ export default function SphereMap({ showPanel = true }) {
       s.scene.add(w)
       s.wireframes.push(w)
     }
-    // thick edges
     if (stateRef.current.edges.length) {
       const pos = new Float32Array(stateRef.current.edges.length * 2 * 3)
       let ii = 0
@@ -375,9 +363,10 @@ export default function SphereMap({ showPanel = true }) {
   function attachScene(width, height) {
     const mount = mountRef.current
     const s = stateRef.current
-    // dispose previous
-    if (s.renderer && s.renderer.domElement && s.renderer.domElement.parentNode) {
-      s.renderer.domElement.parentNode.removeChild(s.renderer.domElement)
+    if (s.renderer?.domElement?.parentNode) {
+      try {
+        s.renderer.domElement.parentNode.removeChild(s.renderer.domElement)
+      } catch {}
     }
     s.renderer = new WebGLRenderer({ antialias: ui.aa, powerPreference: 'high-performance' })
     s.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio))
@@ -391,8 +380,7 @@ export default function SphereMap({ showPanel = true }) {
     }
     s.camera = new PerspectiveCamera(55, width / height, 0.01, 200)
     s.camera.position.set(0, 0, Math.max(ui.r3 * 3.2, 8))
-    const hemi = new HemisphereLight(0x8899ff, 0x080b14, 0.18)
-    s.scene.add(hemi)
+    s.scene.add(new HemisphereLight(0x8899ff, 0x080b14, 0.18))
     const dir = new DirectionalLight(0xffffff, 0.6)
     dir.position.set(5, 6, 8)
     s.scene.add(dir)
@@ -442,11 +430,9 @@ export default function SphereMap({ showPanel = true }) {
     s.controls.minDistance = ui.r1 * 0.6
     s.controls.maxDistance = ui.r3 * 6.0
     s.camera.position.set(0, 0, Math.max(ui.r3 * 3.2, 8))
-    // stats
     return seedNum
   }
 
-  // Init and lifecycle
   useEffect(() => {
     const mount = mountRef.current
     if (!mount) return
@@ -459,13 +445,59 @@ export default function SphereMap({ showPanel = true }) {
 
     const s = stateRef.current
     let raf = 0
+    let animating = false
+
+    const applyLOD = () => {
+      const dist = Math.hypot(s.camera.position.x, s.camera.position.y, s.camera.position.z)
+      const nearT = ui.r2 * 1.4
+      const midT = ui.r3 * 2.2
+      for (const pts of s.pointsLayers) {
+        const total = pts.geometry?.attributes?.position?.count || 0
+        let keep = total
+        if (dist >= midT) keep = Math.max(1, Math.floor(total * 0.25))
+        else if (dist >= nearT) keep = Math.max(1, Math.floor(total * 0.5))
+        try {
+          pts.geometry.setDrawRange(0, keep)
+        } catch {}
+      }
+    }
+    const renderFrame = () => {
+      applyLOD()
+      try {
+        s.renderer.render(s.scene, s.camera)
+      } catch {}
+    }
+    const step = () => {
+      s.controls?.update?.()
+      renderFrame()
+      if (animating) raf = requestAnimationFrame(step)
+    }
+
+    const onControlsStart = () => {
+      if (!animating) {
+        animating = true
+        raf = requestAnimationFrame(step)
+      }
+    }
+    const onControlsEnd = () => {
+      animating = false
+    }
+    const onControlsChange = () => {
+      renderFrame()
+    }
+    try {
+      s.controls.addEventListener('start', onControlsStart)
+      s.controls.addEventListener('end', onControlsEnd)
+      s.controls.addEventListener('change', onControlsChange)
+    } catch {}
+
     const onResize = () => {
       const w = mount.clientWidth,
         h = mount.clientHeight
       s.camera.aspect = w / h
       s.camera.updateProjectionMatrix()
       s.renderer.setSize(w, h)
-      if (s.edgesObj && s.edgesObj.material && s.edgesObj.material.resolution) {
+      if (s.edgesObj?.material?.resolution) {
         try {
           s.edgesObj.material.resolution.set(
             s.renderer.domElement.width / (s.renderer.getPixelRatio?.() || 1),
@@ -473,10 +505,15 @@ export default function SphereMap({ showPanel = true }) {
           )
         } catch {}
       }
+      renderFrame()
     }
     window.addEventListener('resize', onResize)
 
+    let lastPickTs = 0
     const onPointerMove = ev => {
+      const now = performance.now()
+      if (now - lastPickTs < 50) return
+      lastPickTs = now
       const pick = intersectNodes(ev)
       if (pick) showTooltip(ev, pick.node)
       else hideTooltip()
@@ -500,23 +537,23 @@ export default function SphereMap({ showPanel = true }) {
         if (s.edgesObj) s.edgesObj.visible = !s.edgesObj.visible
       } else if (key.toLowerCase() === 'r') {
         regenerate()
+        renderFrame()
       }
     }
     window.addEventListener('keydown', onKey)
 
-    const loop = () => {
-      s.controls?.update?.()
-      try {
-        s.renderer.render(s.scene, s.camera)
-      } catch {}
-      raf = requestAnimationFrame(loop)
-    }
-    raf = requestAnimationFrame(loop)
+    // initial render
+    renderFrame()
 
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', onResize)
       window.removeEventListener('keydown', onKey)
+      try {
+        s.controls.removeEventListener('start', onControlsStart)
+        s.controls.removeEventListener('end', onControlsEnd)
+        s.controls.removeEventListener('change', onControlsChange)
+      } catch {}
       try {
         s.renderer.domElement.removeEventListener('pointermove', onPointerMove)
         s.renderer.domElement.removeEventListener('click', onClick)
@@ -539,7 +576,6 @@ export default function SphereMap({ showPanel = true }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Rebuild when key visual params change
   useEffect(() => {
     if (stateRef.current.scene) {
       buildGeometries()
@@ -604,7 +640,6 @@ export default function SphereMap({ showPanel = true }) {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={mountRef} style={{ position: 'absolute', inset: 0 }} />
-      {/* Panel de controles (mínimo viable, similar al ejemplo) */}
       {showPanel && (
         <div style={panelStyle}>
           <h2 style={{ margin: '0 0 8px', fontSize: 16, letterSpacing: 0.3 }}>
@@ -820,7 +855,6 @@ export default function SphereMap({ showPanel = true }) {
         </div>
       )}
 
-      {/* Tooltip and ping elements */}
       <div
         ref={tooltipRef}
         style={{

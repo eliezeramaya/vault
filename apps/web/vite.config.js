@@ -12,8 +12,37 @@ export default withBase(
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
+        includeAssets: ['robots.txt'],
         workbox: {
           navigateFallback: '/vault/index.html',
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          runtimeCaching: [
+            {
+              // Static assets (immutable): Cache First
+              urlPattern: ({ request, sameOrigin, url }) =>
+                sameOrigin && /\.(?:css|js|woff2?|ttf|otf)$/.test(url.pathname),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'static-v1',
+                expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              },
+            },
+            {
+              // Lightweight JSON APIs: Stale-While-Revalidate
+              urlPattern: ({ request, url }) =>
+                request.destination === '' && /\.json$/.test(url.pathname),
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'json-swr-v1',
+                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              },
+            },
+            {
+              // Exclude or bypass large dynamic 3D assets (e.g., models, HDRs, textures)
+              urlPattern: ({ url }) => /\.(?:hdr|glb|gltf|ktx2|basis|bin)$/i.test(url.pathname),
+              handler: 'NetworkOnly',
+            },
+          ],
         },
         manifest: {
           id: '/vault/',
@@ -28,16 +57,16 @@ export default withBase(
           background_color: '#0a0a15',
           categories: ['productivity', 'notes', 'task-management'],
           icons: [
-            { src: 'icons/Icon-192.png', sizes: '192x192', type: 'image/png' },
-            { src: 'icons/Icon-512.png', sizes: '512x512', type: 'image/png' },
+            { src: '/vault/icons/Icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/vault/icons/Icon-512.png', sizes: '512x512', type: 'image/png' },
             {
-              src: 'icons/Icon-192.png',
+              src: '/vault/icons/Icon-192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any maskable',
             },
             {
-              src: 'icons/Icon-512.png',
+              src: '/vault/icons/Icon-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable',
