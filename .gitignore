@@ -3,7 +3,13 @@
 node_modules/
 dist/
 .vite/
+coverage/
+*.tsbuildinfo
 *.log
+*.tmp
+*.cache
+pnpm-lock.yaml
+yarn.lock
 
 # Flutter/Dart
 **/build/
@@ -16,6 +22,7 @@ pubspec.lock
 # IDE
 .vscode/
 .idea/
+.fleet/
 
 # OS
 .DS_Store
@@ -31,3 +38,5 @@ test-results/
 .env
 **/.env
 **/.env.*
+!.env.example
+**/.env.example

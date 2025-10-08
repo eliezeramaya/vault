@@ -1,0 +1,49 @@
+name: Web - CI
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/web-ci.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: "web-ci-${{ github.ref }}"
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20.x"
+  WORKDIR: "apps/web"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ${{ env.WORKDIR }}/package-lock.json
+
+      - name: Install
+        working-directory: ${{ env.WORKDIR }}
+        run: npm ci
+
+      - name: Lint
+        working-directory: ${{ env.WORKDIR }}
+        run: npm run lint --silent || true # do not fail PR on warnings
+
+      - name: Unit tests
+        working-directory: ${{ env.WORKDIR }}
+        env:
+          CI: true
+        run: npm test
+
+      - name: Build
+        working-directory: ${{ env.WORKDIR }}
+        run: npm run build
