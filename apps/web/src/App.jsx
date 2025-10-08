@@ -9,8 +9,8 @@ import SphereMap from './features/map/SphereMap'
 import FocusLoopBar from './features/focus/FocusLoopBar'
 import { FocusLoopProvider } from './features/focus/FocusLoopContext'
 import EisenhowerPanel from './features/matrix/EisenhowerPanel'
-import Welcome from './components/Welcome'
-import Onboarding from './components/Onboarding'
+import Welcome from './features/onboarding/Welcome'
+import Onboarding from './features/onboarding/Onboarding'
 import Preloader from './components/Preloader'
 import AddIslandSheet from './components/AddIslandSheet'
 import HomePanel from './components/HomePanel'
@@ -22,6 +22,7 @@ import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp'
 import MobileTutorial from './components/MobileTutorial/MobileTutorial'
 import { useMobileTutorial } from './hooks/useMobileTutorial'
 import Sidebar from './features/navigation/Sidebar'
+import BottomNav from './features/navigation/BottomNav'
 
 // Stable theme options at module scope to avoid identity changes across renders
 const VALID_THEMES = ['light', 'dark']
@@ -735,29 +736,7 @@ function AppContent(){
       <Preloader progress={loadPct} visible={loading && view==='map'} />
       {/* Bottom navigation (mobile icons only) */}
       {isNarrow && !isEmbedded && (
-        <nav className="nav-bottom" aria-label="Navegación" style={{
-          position:'fixed', left:12, right:12, bottom:12, height:64,
-          display:'flex', justifyContent:'space-around', alignItems:'center', gap:8,
-          background:'var(--panel-bg)', border:'1px solid var(--panel-border)', color:'var(--text)',
-          borderRadius:14, boxShadow:'0 12px 36px rgba(0,0,0,.22)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)',
-          zIndex:24, pointerEvents:'auto'
-        }}>
-          <button type="button" aria-label="Inicio" onClick={()=> setView('home')} style={{ background:'transparent', border:'none', color: view==='home' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
-            <HomeIcon size={22} aria-hidden />
-          </button>
-          <button type="button" aria-label="Matriz" onClick={()=> setView('matrix')} style={{ background:'transparent', border:'none', color: view==='matrix' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
-            <Grid3X3 size={22} aria-hidden />
-          </button>
-          <button type="button" aria-label="Mapa" onClick={()=> setView('map')} style={{ background:'transparent', border:'none', color: view==='map' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
-            <MapIcon size={22} aria-hidden />
-          </button>
-          <button type="button" aria-label="Pomodoro" onClick={()=> setView('pomodoro')} style={{ background:'transparent', border:'none', color: view==='pomodoro' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
-            <TimerIcon size={22} aria-hidden />
-          </button>
-          <button type="button" aria-label="Ajustes" onClick={()=> setView('settings')} style={{ background:'transparent', border:'none', color: view==='settings' ? 'var(--primary)' : 'var(--text)', padding:8, borderRadius:10 }}>
-            <SettingsIcon size={22} aria-hidden />
-          </button>
-        </nav>
+        <BottomNav view={view} onSelect={setView} />
       )}
       {/* FAB visible solo en mapa plano */}
       {view === 'map' && mapMode === 'plane' && (
