@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'sphere_view_iframe.dart' if (dart.library.io) 'sphere_view_webview.dart';
 
