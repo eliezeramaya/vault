@@ -5,7 +5,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 /// Uses WebView on mobile/desktop and can be replaced with an iframe implementation for web.
 class WebContainer extends StatefulWidget {
   final Uri initialUri;
-  const WebContainer({super.key, required this.initialUri});
+  final void Function(WebViewController controller)? onReady;
+  const WebContainer({super.key, required this.initialUri, this.onReady});
 
   @override
   State<WebContainer> createState() => _WebContainerState();
@@ -27,6 +28,9 @@ class _WebContainerState extends State<WebContainer> {
         ),
       )
       ..loadRequest(widget.initialUri);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onReady?.call(_controller);
+    });
   }
 
   @override
