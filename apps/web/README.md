@@ -43,17 +43,34 @@ Ejemplos de uso:
 
 ## Estructura principal
 - `src/App.jsx` — App shell, temas y navegación.
-- `src/components/EisenhowerPanel.jsx` — Lógica/visual de la matriz y notas.
-- `src/components/Welcome.jsx` — Diálogo de bienvenida accesible.
-- `src/components/HeatmapControls.jsx` — HUD (legacy del modo “globo”).
+- `src/features/matrix/EisenhowerPanel.jsx` — Lógica/visual de la matriz y notas.
+- `src/features/focus/{FocusLoopContext.jsx, FocusLoopContext.test.jsx, FocusLoopBar.jsx}` — Contexto, tests y barra de foco.
+- `src/features/map/{Globe.jsx, SphereMap.jsx, HeatmapControls.jsx, EditIslandSheet.jsx}` — Visualización 2D/3D y HUD del mapa.
+- `src/features/navigation/Sidebar.jsx` — Menú lateral responsivo.
+- `src/lib/**` — Utilidades compartidas (p.ej. `lib/heatmap/**`).
+- `src/styles/**` — Estilos globales y tokens.
+- `src/components/**` — Pequeños componentes compartidos (evitar un “components/” gigante); en migración.
 - `src/tests` — Playwright E2E (atajos, no‑overlap, live region).
+
+Importar por feature (ejemplos):
+
+```js
+import EisenhowerPanel from './features/matrix/EisenhowerPanel'
+import { FocusLoopProvider } from './features/focus/FocusLoopContext'
+import FocusLoopBar from './features/focus/FocusLoopBar'
+import Globe from './features/map/Globe'
+import SphereMap from './features/map/SphereMap'
+import Sidebar from './features/navigation/Sidebar'
+```
 
 ## Despliegue (GitHub Pages)
 - Configurado con `base: '/vault/'` y `start_url/scope` en el manifest.
 - Workflow `deploy-pages.yml` publica `dist` y añade `404.html` como fallback SPA.
 
 ## Notas
-- Las antiguas vistas 3D (globo/heatmap) siguen en el código para referencia; la vista por defecto es la matriz.
+- Estructura “feature‑first”: el código nuevo vive en `src/features/<feature>/...` y lo compartido en `src/{lib,styles,components}`.
+- El directorio `src/components/` se mantendrá pequeño (solo piezas reutilizables). Las vistas/flows residen en `src/features/...`.
+- Las vistas 3D (globo/heatmap) están bajo `src/features/map/`. La vista por defecto sigue siendo la matriz.
 
 ## Métricas personales (FQI, Streak, %Q1/Q2)
 
