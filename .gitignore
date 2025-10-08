@@ -26,3 +26,8 @@ test-results/
 
 # Archives
 *.zip
+
+# Env files (never commit)
+.env
+**/.env
+**/.env.*

@@ -14,6 +14,48 @@ Este monorepo contiene:
 - VS Code (recomendado)
 - Flutter 3.22+ (solo si vas a compilar la shell nativa)
 
+## Instalación local (monorepo)
+
+1) Clonar y preparar hooks
+
+```bash
+git clone https://github.com/eliezeramaya/vault.git
+cd vault
+npm i
+```
+
+2) Variables de entorno por app (opcional)
+
+- Copia `.env.example` → `.env` en cada app que lo requiera:
+    - `apps/web/.env.example`
+    - `apps/flutter/.env.example`
+
+> Nota: `.env` está en `.gitignore`. No lo subas al repo.
+
+3) Ejecutar apps
+
+- Web
+    ```bash
+    cd apps/web
+    npm ci
+    npm run dev   # http://localhost:3000/vault/
+    ```
+- Flutter (shell)
+    ```bash
+    cd apps/flutter
+    flutter pub get
+    flutter run
+    ```
+
+## Scripts (raíz)
+
+- `npm run lint:all` — Lint para apps (actualmente web) usando ESLint.
+- `npm run typecheck:all` — Type-check (TS) si la app define `tsconfig.json`.
+- `npm run analyze:bundle` — Build de web con reporte de tamaños.
+- `npm run format` — Prettier sobre todo el repo.
+
+Pre-commit: Husky + lint-staged aplica Prettier/ESLint solo a archivos staged.
+
 ## Apps
 
 ### apps/web (Matriz de Eisenhower + Pomodoro Timer)
@@ -132,21 +174,41 @@ Contenedor que muestra la web publicada vía WebView/IFrame. Edita la URL en los
 ## Estructura del Proyecto
 
 ```
-apps/web/src/
-├── components/
-│   ├── PomodoroPanel.jsx        # Timer principal con UI completa
-│   ├── HomePanel.jsx            # Matriz de Eisenhower
-│   └── App.jsx                  # Aplicación principal con tabs
-├── lib/
-│   └── metrics.js               # Sistema de métricas y analytics
-├── styles/
-│   └── globals.css              # Estilos globales + variables CSS
-└── tests/
-    ├── pomodoro.spec.ts                    # Pruebas de funcionalidad básica
-    ├── pomodoro-notifications.spec.ts      # Pruebas de notificaciones
-    ├── pomodoro-control-usability.spec.ts  # Pruebas de UX/controles
-    └── pomodoro-visual-feedback.spec.ts    # Pruebas de feedback visual
+vault/
+├── apps/
+│   ├── web/                     # SPA/PWA React + Vite
+│   │   ├── src/
+│   │   │   ├── features/        # Arquitectura feature-first (map, matrix, focus, navigation, onboarding)
+│   │   │   ├── components/      # Componentes pequeños compartidos (en migración)
+│   │   │   ├── lib/             # Utilidades compartidas (p.ej., heatmap)
+│   │   │   └── styles/          # Estilos globales
+│   │   ├── vite.config.js       # Extiende de config/vite.base.mjs
+│   │   └── tsconfig.json        # Extiende de config/tsconfig.base.json
+│   └── flutter/                 # Shell nativo con WebView/IFrame
+│       └── lib/
+│           ├── widgets/         # WebContainer y vistas por pestaña
+│           └── services/        # DeepLinkService para rutas del SPA
+├── config/                      # Config compartida (Vite/ESLint/Prettier/TS)
+├── scripts/                     # Utilidades (lint-all, typecheck-all, analyze-bundle)
+├── .husky/                      # Hooks de git (pre-commit con lint-staged)
+└── .editorconfig                # Consistencia de estilo en editores
 ```
+
+## Modelo de branching
+
+- `main`: rama estable, siempre desplegable.
+- branch de trabajo: `feat/…`, `fix/…`, `chore/…` según el cambio.
+- PRs hacia `main` con descripción clara y checks verdes (lint, typecheck, build).
+
+Convención de commits (sugerida): `tipo(scope): descripción` — p.ej. `feat(web): code-split SphereMap`.
+
+## CI/CD
+
+- GitHub Actions: `deploy-pages.yml` despliega `apps/web` a GitHub Pages (ruta `/vault/`).
+- Validaciones sugeridas (pendiente de agregar):
+    - Lint + typecheck en PR
+    - Build de producción
+    - (Opcional) Tests unitarios/E2E
 
 ## Notas
 - El repositorio usa persistencia en `localStorage` (notas, filtros, tema, vista y métricas Pomodoro). No hay backend.

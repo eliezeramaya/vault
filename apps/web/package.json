@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "analyze": "vite build --mode analyze",
     "postbuild": "node -e \"const fs=require('fs');fs.copyFileSync('dist/index.html','dist/404.html');console.log('SPA fallback 404.html created');\"",
     "preview": "vite preview",
     "test:metrics": "node ./scripts/run-metrics-tests.mjs",
@@ -28,6 +29,7 @@
     "@testing-library/user-event": "^14.5.2",
     "@playwright/test": "^1.55.1",
     "@vitejs/plugin-react": "^4.3.1",
+    "rollup-plugin-visualizer": "^5.12.0",
     "jsdom": "^25.0.1",
     "eslint": "^8.57.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
