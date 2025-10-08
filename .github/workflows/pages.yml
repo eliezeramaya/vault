@@ -47,7 +47,7 @@ jobs:
         run: cp ${{ env.WORKDIR }}/dist/index.html ${{ env.WORKDIR }}/dist/404.html
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ${{ env.WORKDIR }}/dist
 
