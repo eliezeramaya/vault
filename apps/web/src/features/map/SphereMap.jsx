@@ -646,8 +646,9 @@ export default function SphereMap({ showPanel = true }) {
             Esfera 3D · Estrellas + Wire + Líneas
           </h2>
           <div style={rowStyle}>
-            <label>Seed</label>
+            <label htmlFor="sm-seed">Seed</label>
             <input
+              id="sm-seed"
               style={inputStyle}
               value={ui.seed}
               onChange={e => setUI(v => ({ ...v, seed: e.target.value }))}
@@ -655,9 +656,10 @@ export default function SphereMap({ showPanel = true }) {
             />
           </div>
           <div style={rowStyle}>
-            <label>R1 / N1</label>
+            <label htmlFor="sm-r1">R1 / N1</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <input
+                id="sm-r1"
                 style={inputStyle}
                 type="number"
                 step="0.1"
@@ -665,6 +667,7 @@ export default function SphereMap({ showPanel = true }) {
                 onChange={e => setUI(v => ({ ...v, r1: Number(e.target.value) }))}
               />
               <input
+                id="sm-n1"
                 style={inputStyle}
                 type="number"
                 value={ui.n1}
@@ -673,9 +676,10 @@ export default function SphereMap({ showPanel = true }) {
             </div>
           </div>
           <div style={rowStyle}>
-            <label>R2 / N2</label>
+            <label htmlFor="sm-r2">R2 / N2</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <input
+                id="sm-r2"
                 style={inputStyle}
                 type="number"
                 step="0.1"
@@ -683,6 +687,7 @@ export default function SphereMap({ showPanel = true }) {
                 onChange={e => setUI(v => ({ ...v, r2: Number(e.target.value) }))}
               />
               <input
+                id="sm-n2"
                 style={inputStyle}
                 type="number"
                 value={ui.n2}
@@ -691,9 +696,10 @@ export default function SphereMap({ showPanel = true }) {
             </div>
           </div>
           <div style={rowStyle}>
-            <label>R3 / N3</label>
+            <label htmlFor="sm-r3">R3 / N3</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <input
+                id="sm-r3"
                 style={inputStyle}
                 type="number"
                 step="0.1"
@@ -701,6 +707,7 @@ export default function SphereMap({ showPanel = true }) {
                 onChange={e => setUI(v => ({ ...v, r3: Number(e.target.value) }))}
               />
               <input
+                id="sm-n3"
                 style={inputStyle}
                 type="number"
                 value={ui.n3}
@@ -709,8 +716,9 @@ export default function SphereMap({ showPanel = true }) {
             </div>
           </div>
           <div style={rowStyle}>
-            <label>k vecinos</label>
+            <label htmlFor="sm-k">k vecinos</label>
             <input
+              id="sm-k"
               style={inputStyle}
               type="number"
               value={ui.k}
@@ -718,8 +726,9 @@ export default function SphereMap({ showPanel = true }) {
             />
           </div>
           <div style={rowStyle}>
-            <label>p inter-capa</label>
+            <label htmlFor="sm-p">p inter-capa</label>
             <input
+              id="sm-p"
               style={inputStyle}
               type="number"
               step="0.01"
@@ -728,16 +737,18 @@ export default function SphereMap({ showPanel = true }) {
             />
           </div>
           <div style={rowStyle}>
-            <label>Antialias</label>
+            <label htmlFor="sm-aa">Antialias</label>
             <input
+              id="sm-aa"
               type="checkbox"
               checked={ui.aa}
               onChange={e => setUI(v => ({ ...v, aa: !!e.target.checked }))}
             />
           </div>
           <div style={rowStyle}>
-            <label>Precisión</label>
+            <label htmlFor="sm-prec">Precisión</label>
             <input
+              id="sm-prec"
               style={inputStyle}
               type="number"
               step="1"
@@ -747,8 +758,9 @@ export default function SphereMap({ showPanel = true }) {
             />
           </div>
           <div style={rowStyle}>
-            <label>Tamaño L1</label>
+            <label htmlFor="sm-size1">Tamaño L1</label>
             <input
+              id="sm-size1"
               type="range"
               min="0.4"
               max="3.0"
@@ -758,8 +770,9 @@ export default function SphereMap({ showPanel = true }) {
             />
           </div>
           <div style={rowStyle}>
-            <label>Tamaño L2</label>
+            <label htmlFor="sm-size2">Tamaño L2</label>
             <input
+              id="sm-size2"
               type="range"
               min="0.4"
               max="3.0"
@@ -769,8 +782,9 @@ export default function SphereMap({ showPanel = true }) {
             />
           </div>
           <div style={rowStyle}>
-            <label>Tamaño L3</label>
+            <label htmlFor="sm-size3">Tamaño L3</label>
             <input
+              id="sm-size3"
               type="range"
               min="0.4"
               max="3.0"
@@ -780,8 +794,9 @@ export default function SphereMap({ showPanel = true }) {
             />
           </div>
           <div style={rowStyle}>
-            <label>Brillo global</label>
+            <label htmlFor="sm-brightness">Brillo global</label>
             <input
+              id="sm-brightness"
               type="range"
               min="0.2"
               max="1.5"
@@ -791,40 +806,45 @@ export default function SphereMap({ showPanel = true }) {
             />
           </div>
           <div style={rowStyle}>
-            <label>Modo aditivo</label>
+            <label htmlFor="sm-additive">Modo aditivo</label>
             <input
+              id="sm-additive"
               type="checkbox"
               checked={ui.additive}
               onChange={e => setUI(v => ({ ...v, additive: !!e.target.checked }))}
             />
           </div>
           <div style={rowStyle}>
-            <label>Color L1</label>
+            <label htmlFor="sm-color1">Color L1</label>
             <input
+              id="sm-color1"
               type="color"
               value={ui.color1}
               onChange={e => setUI(v => ({ ...v, color1: e.target.value }))}
             />
           </div>
           <div style={rowStyle}>
-            <label>Color L2</label>
+            <label htmlFor="sm-color2">Color L2</label>
             <input
+              id="sm-color2"
               type="color"
               value={ui.color2}
               onChange={e => setUI(v => ({ ...v, color2: e.target.value }))}
             />
           </div>
           <div style={rowStyle}>
-            <label>Color L3</label>
+            <label htmlFor="sm-color3">Color L3</label>
             <input
+              id="sm-color3"
               type="color"
               value={ui.color3}
               onChange={e => setUI(v => ({ ...v, color3: e.target.value }))}
             />
           </div>
           <div style={rowStyle}>
-            <label>Grosor líneas</label>
+            <label htmlFor="sm-edgewidth">Grosor líneas</label>
             <input
+              id="sm-edgewidth"
               type="range"
               min="0.5"
               max="6"
@@ -834,8 +854,9 @@ export default function SphereMap({ showPanel = true }) {
             />
           </div>
           <div style={rowStyle}>
-            <label>Color aristas</label>
+            <label htmlFor="sm-edgecolor">Color aristas</label>
             <input
+              id="sm-edgecolor"
               type="color"
               value={ui.edgeColor}
               onChange={e => setUI(v => ({ ...v, edgeColor: e.target.value }))}

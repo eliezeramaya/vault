@@ -19,7 +19,7 @@ export default withBase(
           runtimeCaching: [
             {
               // Static assets (immutable): Cache First
-              urlPattern: ({ request, sameOrigin, url }) =>
+              urlPattern: ({ sameOrigin, url }) =>
                 sameOrigin && /\.(?:css|js|woff2?|ttf|otf)$/.test(url.pathname),
               handler: 'CacheFirst',
               options: {

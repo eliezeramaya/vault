@@ -1,16 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
-import {
-  Sun,
-  Moon,
-  HelpCircle,
-  MoreHorizontal,
-  User,
-  Home as HomeIcon,
-  Map as MapIcon,
-  Grid3X3,
-  Timer as TimerIcon,
-  Settings as SettingsIcon,
-} from 'lucide-react'
+import { Sun, Moon, HelpCircle, MoreHorizontal } from 'lucide-react'
 import { ErrorProvider } from './contexts/ErrorContext'
 import { useSafeStorage, useSafeOperation } from './hooks/useSafeOperations'
 import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardNavigation'
