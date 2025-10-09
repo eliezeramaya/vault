@@ -3,10 +3,12 @@
 Aplicación React + Vite con una matriz de Eisenhower “liquid‑glass”, accesible y con persistencia local.
 
 ## Requisitos
+
 - Node 18+
 - Navegador moderno
 
 ## Instalar y ejecutar
+
 ```bash
 npm ci
 npm run dev      # http://localhost:3000/vault/ (usar base)
@@ -16,7 +18,20 @@ npm run build
 npm run preview -- --port 4173 --strictPort   # http://localhost:4173/vault/
 ```
 
+### Base path y rutas locales
+
+La app se sirve bajo la subruta `/vault/` (GitHub Pages). Por eso:
+
+- En `vite.config.js` se define `base: '/vault/'`.
+- Manifest PWA usa `start_url` y `scope` en `/vault/`.
+- En desarrollo: abrir `http://localhost:3000/vault/` (no la raíz) para que las rutas y assets relativos funcionen igual que en producción.
+- En preview (`npm run preview`): `http://localhost:4173/vault/`.
+- Playwright y tests E2E navegan a `/vault/` para replicar el entorno final.
+
+Si cambias el base path deberás actualizar: `vite.config.js`, manifest PWA (`start_url`, `scope`), rutas en tests E2E y configuración de Pages.
+
 ## Características
+
 - 96×96 celdas virtuales; chips de 120px sin separación visual (GAP=0) y sin solapamientos.
 - Pan/zoom/zoom‑to‑fit; reencaminado con “ping” cuando hay colisión; keep‑out en ejes centrales (invisible).
 - Doble clic para crear y editar inline; entrada rápida inferior; “peso” (1–10) con teclado/click‑outside.
@@ -26,22 +41,43 @@ npm run preview -- --port 4173 --strictPort   # http://localhost:4173/vault/
 - Theming light/dark con variables CSS; PWA (service worker + manifest) y 404.html para SPA.
 
 ## Tokens de color (estables)
+
 Disponibles en ambos temas (claro/oscuro) como variables CSS:
+
 - Superficies: `--surface`, `--surface-border`, `--surface-text`
 - Elevación: `--elevation-0`, `--elevation-1`, `--elevation-2`
 - Acento: `--accent`, `--accent-hover`, `--accent-pressed`, `--on-accent`, `--focus-ring`
 - Estado: `--ok` (éxito), `--warning`, `--danger`
 
 Ejemplos de uso:
+
 ```css
-.btn-primary { background: var(--accent); color: var(--on-accent); border: none; }
-.btn-primary:hover { background: var(--accent-hover); box-shadow: var(--elevation-1); }
-.btn-primary:active { background: var(--accent-pressed); box-shadow: var(--elevation-2); }
-.card { background: var(--surface); color: var(--surface-text); border: 1px solid var(--surface-border); }
-.focus-ring:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--elevation-1);
+}
+.btn-primary:active {
+  background: var(--accent-pressed);
+  box-shadow: var(--elevation-2);
+}
+.card {
+  background: var(--surface);
+  color: var(--surface-text);
+  border: 1px solid var(--surface-border);
+}
+.focus-ring:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 ```
 
 ## Estructura principal
+
 - `src/App.jsx` — App shell, temas y navegación.
 - `src/features/matrix/EisenhowerPanel.jsx` — Lógica/visual de la matriz y notas.
 - `src/features/focus/{FocusLoopContext.jsx, FocusLoopContext.test.jsx, FocusLoopBar.jsx}` — Contexto, tests y barra de foco.
@@ -64,10 +100,12 @@ import Sidebar from './features/navigation/Sidebar'
 ```
 
 ## Despliegue (GitHub Pages)
+
 - Configurado con `base: '/vault/'` y `start_url/scope` en el manifest.
 - Workflow `deploy-pages.yml` publica `dist` y añade `404.html` como fallback SPA.
 
 ## Notas
+
 - Estructura “feature‑first”: el código nuevo vive en `src/features/<feature>/...` y lo compartido en `src/{lib,styles,components}`.
 - El directorio `src/components/` se mantendrá pequeño (solo piezas reutilizables). Las vistas/flows residen en `src/features/...`.
 - Las vistas 3D (globo/heatmap) están bajo `src/features/map/`. La vista por defecto sigue siendo la matriz.
