@@ -130,3 +130,28 @@ FQI (Focus Quality Index):
 FQI = (Min_Q1 + 0.8·Min_Q2 − 0.4·(Min_Q3 + Min_Q4)) / Min_totales, clamp 0..1.
 
 Resetear datos: limpiar `localStorage` del navegador o llamar a `resetMetricsData()` en la consola.
+
+## Persistencia local y Respaldo
+
+La aplicación no usa backend: todos los datos viven en `localStorage` del navegador.
+
+Claves principales:
+
+- `tasks_v1` — Tareas planificadas/completadas
+- `focus_sessions_v1` — Sesiones de foco / pomodoro
+- `analytics_events_v1` — Eventos internos (telemetría local)
+- `eh_notes_v1` — Notas en la matriz
+- `pomodoroHistory` — Historial granular de pomodoros
+- `pomodoroGoals` — Objetivos configurados
+- `vault-theme-preference` / `theme` — Preferencias de tema
+
+### Exportar / Importar
+
+En Ajustes → “Respaldo y Restauración” puedes:
+
+- Descargar un archivo JSON con todas las claves (incluye `version` y `exportedAt`).
+- Importar un backup en modo:
+  - **Fusionar**: combina arrays evitando duplicados simples y mezcla objetos.
+  - **Reemplazar**: sobrescribe completamente cada clave.
+
+Recomendación: realizar un backup antes de limpiar datos o migrar a otro dispositivo. Si cambias el `base` o estructura de datos en el futuro, incrementa el campo `version` (migraciones aún no implementadas).
