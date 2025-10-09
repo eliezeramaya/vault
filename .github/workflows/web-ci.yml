@@ -47,3 +47,13 @@ jobs:
       - name: Build
         working-directory: ${{ env.WORKDIR }}
         run: npm run build
+
+      - name: Install Playwright browsers
+        working-directory: ${{ env.WORKDIR }}
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests (Playwright)
+        working-directory: ${{ env.WORKDIR }}
+        env:
+          CI: true
+        run: npx playwright test --reporter=line

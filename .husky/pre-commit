@@ -1,2 +1,8 @@
-# Only lint/format staged files
+# Husky pre-commit: run lint-staged (ESLint + Prettier) scoped to staged files.
+# Ensure we execute within apps/web to use its node_modules and config.
+# If husky shim exists include it (some setups add _/husky.sh)
+[ -f "$(dirname "$0")/_/husky.sh" ] && . "$(dirname "$0")/_/husky.sh"
+
+echo "→ Running lint-staged (web)"
+cd apps/web || exit 1
 npx lint-staged

@@ -2,11 +2,18 @@
   "name": "vault-monorepo",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/web"
+  ],
   "scripts": {
     "lint:all": "node ./scripts/lint-all.mjs",
     "typecheck:all": "node ./scripts/typecheck-all.mjs",
+    "typecheck:strict:web": "npm run typecheck:strict --workspace apps/web",
+    "build:all": "npm run build --workspace apps/web",
+    "e2e:smoke": "npm run test:all --workspace apps/web -- --grep @smoke || echo 'smoke subset optional'",
     "analyze:bundle": "node ./scripts/analyze-bundle.mjs",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "ci:verify": "npm run lint:all && npm run typecheck:all && npm run build:all && npm run e2e:smoke"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

@@ -88,6 +88,34 @@ export default withBase(
         : []),
     ],
     server: { port: 3000, open: true },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react')) return 'vendor-react'
+              if (id.includes('three')) return 'vendor-three'
+              return 'vendor'
+            }
+            if (id.includes('/features/matrix/')) return 'matrix-feature'
+            if (id.includes('/components/Pomodoro')) return 'pomodoro-feature'
+            return undefined
+          },
+          chunkFileNames: (chunkInfo) => {
+            const n = chunkInfo.name
+            if (n.startsWith('vendor-react')) return 'vendor/react-[hash].js'
+            if (n.startsWith('vendor-three')) return 'vendor/three-[hash].js'
+            return 'chunks/[name]-[hash].js'
+          },
+          entryFileNames: 'entry/[name]-[hash].js',
+          assetFileNames: (assetInfo) => {
+            const ext = assetInfo.name?.split('.').pop()
+            if (/css/i.test(ext || '')) return 'assets/css/[name]-[hash][extname]'
+            return 'assets/[name]-[hash][extname]'
+          },
+        },
+      },
+    },
     test: {
       environment: 'jsdom',
       globals: true,
@@ -95,5 +123,5 @@ export default withBase(
       include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
       coverage: { reporter: ['text', 'html'], include: ['src/lib/**'] },
     },
-  })),
+  }))
 )

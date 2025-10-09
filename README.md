@@ -9,6 +9,28 @@ Este monorepo contiene:
 - `apps/web` — SPA/PWA en React + Vite con una Matriz de Eisenhower "liquid-glass" y un Timer Pomodoro completo, ambos accesibles con atajos de teclado, filtros y persistencia local.
 - `apps/flutter` — Shell Flutter (Android/iOS/Web/Windows) que incrusta la app web publicada.
 
+---
+## 🧭 Diagrama de Arquitectura (alto nivel)
+
+```mermaid
+graph TD;
+  A[UI React (SPA)] --> B[State / Hooks]
+  B --> C[LocalStorage Persistencia]
+  A --> D[Service Worker / PWA Shell]
+  D -->|Cache estático + offline| E[Assets / HTML / Manifest]
+  A --> F[Web APIs]
+  F --> G[Notifications API]
+  F --> H[Web Audio API]
+  F --> I[Pointer & Touch Events]
+  C --> J[Backup / Export-Import JSON]
+  subgraph Dispositivo Cliente
+    A;B;C;D;E;F;G;H;I;J
+  end
+```
+
+**Flujo:** La UI (React) gestiona interacción y estado; la persistencia es local (no hay backend). El Service Worker proporciona PWA (offline + caching) y la exportación permite respaldo manual de datos.
+
+---
 ## Requisitos
 - Node 18+
 - VS Code (recomendado)
@@ -50,11 +72,65 @@ npm i
 ## Scripts (raíz)
 
 - `npm run lint:all` — Lint para apps (actualmente web) usando ESLint.
-- `npm run typecheck:all` — Type-check (TS) si la app define `tsconfig.json`.
+- `npm run typecheck:all` — Type-check (TS / JS con `checkJs`) si la app define `tsconfig.json`.
+- `npm run build:all` — Build de producción de las apps soportadas (web ahora).
+- `npm run e2e:smoke` — Subconjunto rápido de pruebas E2E etiquetadas `@smoke` (no falla el pipeline si aún no hay marcadas).
 - `npm run analyze:bundle` — Build de web con reporte de tamaños.
 - `npm run format` — Prettier sobre todo el repo.
+- `npm run ci:verify` — Cadena DX para PR: lint → typecheck → build → smoke E2E.
 
 Pre-commit: Husky + lint-staged aplica Prettier/ESLint solo a archivos staged.
+
+### Etiquetar tests de smoke
+Puedes añadir `test.describe('@smoke', () => { ... })` o `test('@smoke nombre', ...)` en Playwright para incluirlos en el pipeline rápido.
+
+### Flujo recomendado en PR
+```bash
+npm run ci:verify
+```
+Esto asegura coherencia con lo que correrá en CI antes de subir cambios.
+
+## Nuevos scripts de tipado estricto (progresivo)
+
+Se añadió `tsconfig.strict.json` en `apps/web` para una migración incremental a TypeScript estricto solo sobre `src/lib` inicialmente.
+
+Scripts:
+- `npm run typecheck:strict:web` (raíz) — Ejecuta `tsc -p apps/web/tsconfig.strict.json`.
+- `npm run typecheck:strict` (dentro de `apps/web`) — Verificación estricta (JS con `checkJs` + flags adicionales).
+
+Cómo ampliar cobertura estricta:
+1. Añade el nuevo directorio a `include` en `tsconfig.strict.json`.
+2. (Opcional) Convierte archivos `.jsx` a `.tsx` en ese directorio.
+3. Ejecuta `npm run typecheck:strict:web` hasta que no haya errores.
+4. Repite por feature.
+
+Beneficios:
+- Detectar `undefined` implícitos (`noUncheckedIndexedAccess`).
+- Prevenir overrides silenciosos (`noImplicitOverride`).
+- Mayor calidad antes de mover todo el repo a `strict` global.
+
+## Workflow E2E completo
+
+Se agregó `.github/workflows/e2e-full.yml` que corre la suite Playwright completa en:
+- `workflow_dispatch` (manual desde Actions)
+- `schedule` diario 03:00 UTC
+- PR etiquetado con label `run-full-e2e`
+
+Uso:
+1. Para ejecutar manualmente: Actions → "E2E Full Suite" → Run workflow.
+2. Para forzar en un PR: añade label `run-full-e2e`.
+
+Artifacts: sube `apps/web/test-results` (si existen) como artifact `playwright-report`.
+
+## Estrategia de smoke vs full
+
+- `ci:verify` (PRs normales) usa solo pruebas `@smoke` para feedback rápido (< ~10s ahora).
+- Full suite se ejecuta en background (cron / bajo demanda) para detectar regresiones profundas.
+
+Criterios para marcar `@smoke`:
+- Corre < 5s.
+- Cubre camino crítico (tema, creación básica de nota, preloader, etc.).
+- No depende de animaciones largas ni random.
 
 ## Apps
 
@@ -145,6 +221,66 @@ npx playwright test tests/pomodoro-visual-feedback.spec.ts    # Feedback visual
 ### apps/flutter (Shell)
 Contenedor que muestra la web publicada vía WebView/IFrame. Edita la URL en los widgets de `lib/presentation/widgets/`.
 
+---
+## ⌨️ Tabla de Atajos de Teclado
+
+| Atajo | Acción | Contexto | Notas |
+|-------|--------|----------|-------|
+| N | Crear nueva nota | Matriz | Foco no requerido si panel activo |
+| E | Editar nota seleccionada | Matriz | Abre edición inline |
+| Delete / Backspace | Eliminar nota seleccionada | Matriz | Confirma silenciosamente |
+| Flechas | Navegar notas | Matriz | Cambia foco lógico |
+| = / + | Zoom in | Mapa/Matriz | Requiere que vista soporte zoom |
+| - | Zoom out | Mapa/Matriz |  |
+| 0 | Reset zoom | Mapa/Matriz | Centra y ajusta |
+| H / ? | Mostrar ayuda | Global | Toggle del panel de ayuda |
+| Esc | Cerrar diálogos / salir de edición | Global | Incluye welcome/help |
+| Enter | Confirmar edición / crear | Inputs | Dependiendo del foco |
+| Espacio | Pausa/Reanuda timer | Pomodoro | Cuando el foco está en el área del timer |
+| P | Pausa/Reanuda timer | Pomodoro | Acceso rápido global (si implementado en listener global) |
+| S | Saltar a siguiente fase | Pomodoro | Si timer activo |
+
+> Si añades o modificas un atajo, documenta aquí y en el panel de ayuda dentro de la app.
+
+---
+## ♿ Matriz de Accesibilidad (ARIA / Semántica)
+
+| Rol / Atributo | Ubicación | Propósito | Notas |
+|----------------|----------|-----------|-------|
+| `role="navigation"` / `aria-label="Navegación"` | Barra lateral / inferior | Agrupar links de vistas | Permite landmarks para screen readers |
+| `aria-selected` | Botones de vista | Indicar vista activa | Sincronizado con estado `view` |
+| `aria-controls` | Botones de vista | Referenciar panel asociado | Facilita relación control-panel |
+| `aria-label` (acciones) | Icon buttons (cerrar menú, tema, ayuda) | Texto accesible | Íconos marcan `aria-hidden="true"` |
+| `aria-hidden="true"` | Iconos decorativos | Ocultar ruido semántico | Solo visual |
+| `aria-live` (polite) | Live region de timer / métricas | Anunciar cambios de progreso | Evita spam con throttling interno |
+| `tabindex="0"` estratégico | Notas / chips | Permitir foco y navegación | Coordinado con manejo personalizado de teclado |
+| Focus trapping | Diálogo de bienvenida | Mantener foco dentro | Retorno al invocador al cerrar |
+| Skip link | Layout root | Saltar a contenido principal | Mejora navegación keyboard |
+| `aria-pressed` / `aria-checked` | Toggles / filtros | Estado binario | Visual + semántico |
+
+> Revisa atributos periódicamente para evitar divergencias tras refactors.
+
+---
+## 📱 Checklist de Optimizaciones Móviles
+
+Archivo detallado: [`MOBILE_OPTIMIZATIONS.md`](./MOBILE_OPTIMIZATIONS.md)
+
+| Item | Estado | Notas |
+|------|--------|-------|
+| Targets táctiles ≥44px | ✅ | Botones navegación 56–64px, acciones 44px |
+| Pinch-to-zoom | ✅ | Gestos en panel/matriz |
+| Long press creación | ✅ | Crear notas |
+| Double tap reset | ✅ | Reset de zoom |
+| Swipe navegación | ✅ | Cambia vistas (NavRail) |
+| Swipe-to-dismiss notifs | ✅ | NotificationCenter |
+| Passive listeners | ✅ | `addEventListener(..., { passive: true })` donde aplica |
+| Throttling de gestos | ✅ | Interno en hooks de zoom/pan |
+| Safe areas | ✅ | CSS env(safe-area-inset-*) |
+| Reduce motion | ✅ | Respeta `prefers-reduced-motion` |
+| Haptic feedback | 🔄 | Parcial, falta cobertura completa |
+| Tutorial gestos | 🔄 | Onboarding planificado |
+
+---
 ## Arquitectura Técnica
 
 ### Frontend (React + Vite)
@@ -242,4 +378,41 @@ Las contribuciones son bienvenidas. Por favor:
 
 ## Licencia
 MIT License - ver archivo LICENSE para detalles.
+
+## Modo Radial (Experimental β)
+
+Se añadió un modo **Radial β** opcional en el panel Eisenhower que representa notas en torno a un "pozo gravitacional" central:
+
+- Radio inverso al peso (prioridad + tiempo estimado derivado de longitud de texto por ahora).
+- Tamaño (escala) progresiva en función de w.
+- Distribución angular por cuadrantes conservando la semántica original.
+- Resolución básica de colisiones mediante espiral incremental.
+
+Activación: botón "Radial β" en la esquina superior derecha del panel.
+
+Limitaciones actuales (Fase 2):
+- Tiempo (t) se aproxima por longitud de texto (placeholder).
+- Sin animaciones de transición todavía.
+- Heurística para importante/urgente: prioridad alta sugiere ambos (se refinará).
+
+Roadmap:
+1. Atributo de duración real por nota.
+2. Blending multiplicativo para peso y animaciones suaves.
+3. Optimización spatial index para >500 notas.
+4. KPI overlay ampliado (overlap %, estabilidad).
+
+### Gravity Mode (Experimental β)
+Nuevo modo experimental de matriz gravitacional:
+- Peso = combinación prioridad (70%) + tiempo estimado (30%).
+- Radio inverso al peso (más peso ⇒ más cerca del centro).
+- Escala del recuadro crece con w^γ.
+- Editor inline: slider prioridad 1–10 + chips rápidas de tiempo (15/25/50/90/120m).
+- Índice de Acción diario: suma de pesos frente a objetivo.
+- Atajos (en modo gravity):
+  - N: nueva tarea (hereda defaults)
+  - P: incrementar prioridad seleccionada (+1)
+  - T: abrir editor de tiempo de tarea enfocada
+  - G: centrar / reset origin
+  - Z: zoom fit (pendiente si se añade zoom)
+- aria-live announcements para cambios de prioridad/tiempo.
 

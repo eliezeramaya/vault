@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import { safeStringGet, safeStringSet } from './lib/safeStorage'
 import { Sun, Moon, HelpCircle, MoreHorizontal } from 'lucide-react'
 import { ErrorProvider } from './contexts/ErrorContext'
 import { useSafeStorage, useSafeOperation } from './hooks/useSafeOperations'
@@ -76,7 +77,7 @@ function AppContent() {
   useEffect(() => {
     try {
       const mq = window.matchMedia('(max-width: 768px)')
-      const apply = e => setIsNarrow(!!e.matches)
+      const apply = (e) => setIsNarrow(!!e.matches)
       apply(mq)
       mq.addEventListener('change', apply)
       return () => mq.removeEventListener('change', apply)
@@ -86,7 +87,7 @@ function AppContent() {
   }, [])
 
   const toggleSidebar = useCallback(() => {
-    setSidebarOpen(prev => {
+    setSidebarOpen((prev) => {
       const next = !prev
       try {
         safeSetItem('sidebarOpen', next)
@@ -118,7 +119,7 @@ function AppContent() {
     const initializeTheme = () => {
       try {
         // Check localStorage first
-        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+        const savedTheme = safeStringGet(THEME_STORAGE_KEY)
         if (savedTheme && VALID_THEMES.includes(savedTheme)) {
           setTheme(savedTheme)
           document.documentElement.setAttribute('data-theme', savedTheme)
@@ -138,10 +139,10 @@ function AppContent() {
         document.documentElement.setAttribute('data-theme', systemTheme)
 
         // Listen for system theme changes
-        const handleSystemThemeChange = e => {
+        const handleSystemThemeChange = (e) => {
           // Only auto-switch if user hasn't manually set a preference
           try {
-            const userPreference = localStorage.getItem(THEME_STORAGE_KEY)
+            const userPreference = safeStringGet(THEME_STORAGE_KEY)
             if (!userPreference) {
               const newSystemTheme = e.matches ? 'dark' : 'light'
               setTheme(newSystemTheme)
@@ -243,7 +244,7 @@ function AppContent() {
       safeSetItem(THEME_STORAGE_KEY, theme)
       // Also persist to legacy key expected by some tests/utilities
       try {
-        localStorage.setItem('theme', theme)
+        safeStringSet('theme', theme)
       } catch {
         /* ignore */
       }
@@ -267,7 +268,7 @@ function AppContent() {
     const newTheme = theme === 'dark' ? 'light' : 'dark'
     // Eagerly persist for tests that read immediately after action
     try {
-      localStorage.setItem('theme', newTheme)
+      safeStringSet('theme', newTheme)
     } catch {
       /* ignore */
     }
@@ -276,12 +277,12 @@ function AppContent() {
 
   // Function to set specific theme with validation
   const setSpecificTheme = useCallback(
-    newTheme => {
+    (newTheme) => {
       if (VALID_THEMES.includes(newTheme) && newTheme !== theme) {
         setTheme(newTheme)
       }
     },
-    [theme],
+    [theme]
   )
 
   // Function to reset to system preference
@@ -432,7 +433,7 @@ function AppContent() {
       setShowOb,
       showKeyboardHelp,
       setShowKeyboardHelp,
-    ],
+    ]
   )
 
   useGlobalKeyboardShortcuts(globalShortcuts)
@@ -506,13 +507,13 @@ function AppContent() {
   // Close menu on outside click or Esc
   useEffect(() => {
     if (!menuOpen) return
-    const onDocDown = e => {
+    const onDocDown = (e) => {
       const m = menuRef.current
       const b = menuBtnRef.current
       if (!m || !b) return
       if (!m.contains(e.target) && !b.contains(e.target)) setMenuOpen(false)
     }
-    const onKey = e => {
+    const onKey = (e) => {
       if (e.key === 'Escape') setMenuOpen(false)
     }
     document.addEventListener('mousedown', onDocDown)
@@ -576,14 +577,14 @@ function AppContent() {
 
   // Global error listeners for better diagnostics in production
   useEffect(() => {
-    const onError = e => {
+    const onError = (e) => {
       try {
         console.error('[GlobalError]', e?.message || e, e?.error)
       } catch (err) {
         /* swallow console error */
       }
     }
-    const onRej = e => {
+    const onRej = (e) => {
       try {
         console.error('[UnhandledRejection]', e?.reason || e)
       } catch (err) {
@@ -605,7 +606,7 @@ function AppContent() {
         open={sidebarOpen}
         onToggle={toggleSidebar}
         currentView={view}
-        onSelect={v => setView(v)}
+        onSelect={(v) => setView(v)}
       />
       {/* Mobile backdrop when sidebar is open */}
       {isNarrow && sidebarOpen && (
@@ -891,7 +892,7 @@ function AppContent() {
                 title="Menú"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                onClick={() => setMenuOpen(o => !o)}
+                onClick={() => setMenuOpen((o) => !o)}
                 style={{
                   background: 'transparent',
                   color: 'var(--text)',
@@ -995,7 +996,7 @@ function AppContent() {
                     role="menuitem"
                     type="button"
                     onClick={() => {
-                      setView(v => (v === 'map' ? 'matrix' : 'map'))
+                      setView((v) => (v === 'map' ? 'matrix' : 'map'))
                       setMenuOpen(false)
                     }}
                     style={{
@@ -1068,7 +1069,7 @@ function AppContent() {
                 <Globe
                   onHelp={() => setShowOb(true)}
                   onReady={handleGlobeReady}
-                  onApi={api => (globeApiRef.current = api)}
+                  onApi={(api) => (globeApiRef.current = api)}
                   showControls={!showWelcome}
                 />
               ) : (
@@ -1197,7 +1198,7 @@ function AppContent() {
             <React.Suspense fallback={<div style={{ padding: 16 }}>Cargando ajustes…</div>}>
               <SettingsPanel
                 theme={theme}
-                onThemeToggle={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))}
+                onThemeToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
               />
             </React.Suspense>
           )}

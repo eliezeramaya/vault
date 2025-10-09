@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import {
   WebGLRenderer,
   Scene,
@@ -75,7 +75,7 @@ function randomPointOnSphere(r, rnd) {
   const s = Math.sin(phi)
   return new Vector3(r * s * Math.cos(theta), r * s * Math.sin(theta), r * Math.cos(phi))
 }
-const hexToInt = hex => parseInt(hex.replace('#', ''), 16)
+const hexToInt = (hex) => parseInt(hex.replace('#', ''), 16)
 
 export default function SphereMap({ showPanel = true }) {
   const mountRef = useRef(null)
@@ -253,13 +253,13 @@ export default function SphereMap({ showPanel = true }) {
     s.wireframes = []
   }
 
-  function buildGeometries() {
+  const buildGeometries = useCallback(() => {
     const s = stateRef.current
     clearScene()
     const tex = getStarTexture()
     const sizes = [ui.size1, ui.size2, ui.size3]
     for (const layer of [1, 2, 3]) {
-      const arr = s.nodes.filter(n => n.layer === layer)
+      const arr = s.nodes.filter((n) => n.layer === layer)
       const geo = new BufferGeometry()
       const positions = new Float32Array(arr.length * 3)
       for (let i = 0; i < arr.length; i++) positions.set(arr[i].position, i * 3)
@@ -289,7 +289,7 @@ export default function SphereMap({ showPanel = true }) {
       const g = new WireframeGeometry(new SphereGeometry(R, 24, 16))
       const w = new LineSegments(
         g,
-        new LineBasicMaterial({ color: new Color(gridCol), opacity: 0.22, transparent: true }),
+        new LineBasicMaterial({ color: new Color(gridCol), opacity: 0.22, transparent: true })
       )
       s.scene.add(w)
       s.wireframes.push(w)
@@ -297,7 +297,7 @@ export default function SphereMap({ showPanel = true }) {
     if (stateRef.current.edges.length) {
       const pos = new Float32Array(stateRef.current.edges.length * 2 * 3)
       let ii = 0
-      const byId = new Map(stateRef.current.nodes.map(n => [n.id, n]))
+      const byId = new Map(stateRef.current.nodes.map((n) => [n.id, n]))
       for (const e of stateRef.current.edges) {
         const a = byId.get(e.source),
           b = byId.get(e.target)
@@ -321,21 +321,36 @@ export default function SphereMap({ showPanel = true }) {
       try {
         mat.resolution.set(
           renderer.domElement.width / (renderer.getPixelRatio?.() || 1),
-          renderer.domElement.height / (renderer.getPixelRatio?.() || 1),
+          renderer.domElement.height / (renderer.getPixelRatio?.() || 1)
         )
       } catch {}
       const lines = new LineSegments2(geom, mat)
       stateRef.current.scene.add(lines)
       stateRef.current.edgesObj = lines
     }
-  }
+  }, [
+    gridCol,
+    ui.additive,
+    ui.brightness,
+    ui.color1,
+    ui.color2,
+    ui.color3,
+    ui.edgeColor,
+    ui.edgeWidth,
+    ui.r1,
+    ui.r2,
+    ui.r3,
+    ui.size1,
+    ui.size2,
+    ui.size3,
+  ])
 
   function showTooltip(ev, node) {
     const el = tooltipRef.current
     if (!el) return
     const prec = Math.max(0, parseInt(ui.prec))
-    const fmt = v => Number(v).toFixed(prec)
-    el.innerHTML = `<div class="id" style="font-weight:700;color:#9ccaff">${node.id}</div><div>layer: ${node.layer}</div><div>pos: [${node.position.map(v => fmt(v)).join(', ')}]</div>`
+    const fmt = (v) => Number(v).toFixed(prec)
+    el.innerHTML = `<div class="id" style="font-weight:700;color:#9ccaff">${node.id}</div><div>layer: ${node.layer}</div><div>pos: [${node.position.map((v) => fmt(v)).join(', ')}]</div>`
     el.style.left = `${ev.clientX}px`
     el.style.top = `${ev.clientY}px`
     el.style.display = 'block'
@@ -355,7 +370,7 @@ export default function SphereMap({ showPanel = true }) {
         { transform: 'translate(-8px,-8px) scale(0.4)', opacity: 1 },
         { transform: 'translate(-8px,-8px) scale(1.8)', opacity: 0 },
       ],
-      { duration: 600, easing: 'cubic-bezier(.2,.8,.2,1)' },
+      { duration: 600, easing: 'cubic-bezier(.2,.8,.2,1)' }
     )
     setTimeout(() => (el.style.opacity = '0'), 620)
   }
@@ -396,7 +411,7 @@ export default function SphereMap({ showPanel = true }) {
     const rect = s.renderer.domElement.getBoundingClientRect()
     s.mouse.set(
       ((ev.clientX - rect.left) / rect.width) * 2 - 1,
-      -((ev.clientY - rect.top) / rect.height) * 2 + 1,
+      -((ev.clientY - rect.top) / rect.height) * 2 + 1
     )
     s.raycaster.params.Points = { threshold: 0.12 }
     s.raycaster.setFromCamera(s.mouse, s.camera)
@@ -416,7 +431,7 @@ export default function SphereMap({ showPanel = true }) {
     }
     if (!hit) return null
     const layer = hit.userData.layer
-    const arr = stateRef.current.nodes.filter(n => n.layer === layer)
+    const arr = stateRef.current.nodes.filter((n) => n.layer === layer)
     const index = hitInfo.index
     const node = arr[index]
     return { node }
@@ -501,7 +516,7 @@ export default function SphereMap({ showPanel = true }) {
         try {
           s.edgesObj.material.resolution.set(
             s.renderer.domElement.width / (s.renderer.getPixelRatio?.() || 1),
-            s.renderer.domElement.height / (s.renderer.getPixelRatio?.() || 1),
+            s.renderer.domElement.height / (s.renderer.getPixelRatio?.() || 1)
           )
         } catch {}
       }
@@ -510,7 +525,7 @@ export default function SphereMap({ showPanel = true }) {
     window.addEventListener('resize', onResize)
 
     let lastPickTs = 0
-    const onPointerMove = ev => {
+    const onPointerMove = (ev) => {
       const now = performance.now()
       if (now - lastPickTs < 50) return
       lastPickTs = now
@@ -518,7 +533,7 @@ export default function SphereMap({ showPanel = true }) {
       if (pick) showTooltip(ev, pick.node)
       else hideTooltip()
     }
-    const onClick = ev => {
+    const onClick = (ev) => {
       const pick = intersectNodes(ev)
       if (!pick) return
       pingAt(ev.clientX, ev.clientY)
@@ -526,7 +541,7 @@ export default function SphereMap({ showPanel = true }) {
     s.renderer.domElement.addEventListener('pointermove', onPointerMove)
     s.renderer.domElement.addEventListener('click', onClick)
 
-    const onKey = e => {
+    const onKey = (e) => {
       const key = (e?.key || '').toString()
       if (!key) return
       if (['1', '2', '3'].includes(key)) {
@@ -566,33 +581,21 @@ export default function SphereMap({ showPanel = true }) {
         s.renderer.dispose()
       } catch {}
       if (s.scene) {
-        s.scene.traverse(obj => {
+        s.scene.traverse((obj) => {
           obj.geometry?.dispose?.()
           obj.material?.dispose?.()
         })
       }
       if (mount && mount.firstChild) mount.removeChild(mount.firstChild)
     }
+    // This mount effect intentionally omits many helper functions that are defined inline but semantically stable.
+    // Re-running it would tear down and rebuild an expensive Three.js scene. We accept the lint suppression here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [buildGeometries, ui.seed])
 
   useEffect(() => {
-    if (stateRef.current.scene) {
-      buildGeometries()
-    }
-  }, [
-    ui.size1,
-    ui.size2,
-    ui.size3,
-    ui.brightness,
-    ui.additive,
-    ui.color1,
-    ui.color2,
-    ui.color3,
-    ui.edgeWidth,
-    ui.edgeColor,
-    gridCol,
-  ])
+    if (stateRef.current.scene) buildGeometries()
+  }, [buildGeometries])
 
   const panelStyle = {
     position: 'absolute',
@@ -651,7 +654,7 @@ export default function SphereMap({ showPanel = true }) {
               id="sm-seed"
               style={inputStyle}
               value={ui.seed}
-              onChange={e => setUI(v => ({ ...v, seed: e.target.value }))}
+              onChange={(e) => setUI((v) => ({ ...v, seed: e.target.value }))}
               placeholder="auto"
             />
           </div>
@@ -664,14 +667,14 @@ export default function SphereMap({ showPanel = true }) {
                 type="number"
                 step="0.1"
                 value={ui.r1}
-                onChange={e => setUI(v => ({ ...v, r1: Number(e.target.value) }))}
+                onChange={(e) => setUI((v) => ({ ...v, r1: Number(e.target.value) }))}
               />
               <input
                 id="sm-n1"
                 style={inputStyle}
                 type="number"
                 value={ui.n1}
-                onChange={e => setUI(v => ({ ...v, n1: parseInt(e.target.value || '0') }))}
+                onChange={(e) => setUI((v) => ({ ...v, n1: parseInt(e.target.value || '0') }))}
               />
             </div>
           </div>
@@ -684,14 +687,14 @@ export default function SphereMap({ showPanel = true }) {
                 type="number"
                 step="0.1"
                 value={ui.r2}
-                onChange={e => setUI(v => ({ ...v, r2: Number(e.target.value) }))}
+                onChange={(e) => setUI((v) => ({ ...v, r2: Number(e.target.value) }))}
               />
               <input
                 id="sm-n2"
                 style={inputStyle}
                 type="number"
                 value={ui.n2}
-                onChange={e => setUI(v => ({ ...v, n2: parseInt(e.target.value || '0') }))}
+                onChange={(e) => setUI((v) => ({ ...v, n2: parseInt(e.target.value || '0') }))}
               />
             </div>
           </div>
@@ -704,14 +707,14 @@ export default function SphereMap({ showPanel = true }) {
                 type="number"
                 step="0.1"
                 value={ui.r3}
-                onChange={e => setUI(v => ({ ...v, r3: Number(e.target.value) }))}
+                onChange={(e) => setUI((v) => ({ ...v, r3: Number(e.target.value) }))}
               />
               <input
                 id="sm-n3"
                 style={inputStyle}
                 type="number"
                 value={ui.n3}
-                onChange={e => setUI(v => ({ ...v, n3: parseInt(e.target.value || '0') }))}
+                onChange={(e) => setUI((v) => ({ ...v, n3: parseInt(e.target.value || '0') }))}
               />
             </div>
           </div>
@@ -722,7 +725,7 @@ export default function SphereMap({ showPanel = true }) {
               style={inputStyle}
               type="number"
               value={ui.k}
-              onChange={e => setUI(v => ({ ...v, k: parseInt(e.target.value || '0') }))}
+              onChange={(e) => setUI((v) => ({ ...v, k: parseInt(e.target.value || '0') }))}
             />
           </div>
           <div style={rowStyle}>
@@ -733,7 +736,7 @@ export default function SphereMap({ showPanel = true }) {
               type="number"
               step="0.01"
               value={ui.p}
-              onChange={e => setUI(v => ({ ...v, p: Number(e.target.value) }))}
+              onChange={(e) => setUI((v) => ({ ...v, p: Number(e.target.value) }))}
             />
           </div>
           <div style={rowStyle}>
@@ -742,7 +745,7 @@ export default function SphereMap({ showPanel = true }) {
               id="sm-aa"
               type="checkbox"
               checked={ui.aa}
-              onChange={e => setUI(v => ({ ...v, aa: !!e.target.checked }))}
+              onChange={(e) => setUI((v) => ({ ...v, aa: !!e.target.checked }))}
             />
           </div>
           <div style={rowStyle}>
@@ -754,7 +757,7 @@ export default function SphereMap({ showPanel = true }) {
               step="1"
               min="0"
               value={ui.prec}
-              onChange={e => setUI(v => ({ ...v, prec: parseInt(e.target.value || '0') }))}
+              onChange={(e) => setUI((v) => ({ ...v, prec: parseInt(e.target.value || '0') }))}
             />
           </div>
           <div style={rowStyle}>
@@ -766,7 +769,7 @@ export default function SphereMap({ showPanel = true }) {
               max="3.0"
               step="0.1"
               value={ui.size1}
-              onChange={e => setUI(v => ({ ...v, size1: Number(e.target.value) }))}
+              onChange={(e) => setUI((v) => ({ ...v, size1: Number(e.target.value) }))}
             />
           </div>
           <div style={rowStyle}>
@@ -778,7 +781,7 @@ export default function SphereMap({ showPanel = true }) {
               max="3.0"
               step="0.1"
               value={ui.size2}
-              onChange={e => setUI(v => ({ ...v, size2: Number(e.target.value) }))}
+              onChange={(e) => setUI((v) => ({ ...v, size2: Number(e.target.value) }))}
             />
           </div>
           <div style={rowStyle}>
@@ -790,7 +793,7 @@ export default function SphereMap({ showPanel = true }) {
               max="3.0"
               step="0.1"
               value={ui.size3}
-              onChange={e => setUI(v => ({ ...v, size3: Number(e.target.value) }))}
+              onChange={(e) => setUI((v) => ({ ...v, size3: Number(e.target.value) }))}
             />
           </div>
           <div style={rowStyle}>
@@ -802,7 +805,7 @@ export default function SphereMap({ showPanel = true }) {
               max="1.5"
               step="0.05"
               value={ui.brightness}
-              onChange={e => setUI(v => ({ ...v, brightness: Number(e.target.value) }))}
+              onChange={(e) => setUI((v) => ({ ...v, brightness: Number(e.target.value) }))}
             />
           </div>
           <div style={rowStyle}>
@@ -811,7 +814,7 @@ export default function SphereMap({ showPanel = true }) {
               id="sm-additive"
               type="checkbox"
               checked={ui.additive}
-              onChange={e => setUI(v => ({ ...v, additive: !!e.target.checked }))}
+              onChange={(e) => setUI((v) => ({ ...v, additive: !!e.target.checked }))}
             />
           </div>
           <div style={rowStyle}>
@@ -820,7 +823,7 @@ export default function SphereMap({ showPanel = true }) {
               id="sm-color1"
               type="color"
               value={ui.color1}
-              onChange={e => setUI(v => ({ ...v, color1: e.target.value }))}
+              onChange={(e) => setUI((v) => ({ ...v, color1: e.target.value }))}
             />
           </div>
           <div style={rowStyle}>
@@ -829,7 +832,7 @@ export default function SphereMap({ showPanel = true }) {
               id="sm-color2"
               type="color"
               value={ui.color2}
-              onChange={e => setUI(v => ({ ...v, color2: e.target.value }))}
+              onChange={(e) => setUI((v) => ({ ...v, color2: e.target.value }))}
             />
           </div>
           <div style={rowStyle}>
@@ -838,7 +841,7 @@ export default function SphereMap({ showPanel = true }) {
               id="sm-color3"
               type="color"
               value={ui.color3}
-              onChange={e => setUI(v => ({ ...v, color3: e.target.value }))}
+              onChange={(e) => setUI((v) => ({ ...v, color3: e.target.value }))}
             />
           </div>
           <div style={rowStyle}>
@@ -850,7 +853,7 @@ export default function SphereMap({ showPanel = true }) {
               max="6"
               step="0.1"
               value={ui.edgeWidth}
-              onChange={e => setUI(v => ({ ...v, edgeWidth: Number(e.target.value) }))}
+              onChange={(e) => setUI((v) => ({ ...v, edgeWidth: Number(e.target.value) }))}
             />
           </div>
           <div style={rowStyle}>
@@ -859,7 +862,7 @@ export default function SphereMap({ showPanel = true }) {
               id="sm-edgecolor"
               type="color"
               value={ui.edgeColor}
-              onChange={e => setUI(v => ({ ...v, edgeColor: e.target.value }))}
+              onChange={(e) => setUI((v) => ({ ...v, edgeColor: e.target.value }))}
             />
           </div>
           <button
