@@ -1,0 +1,14 @@
+.glass-card {
+  background: rgb(var(--glass) / var(--glass-alpha));
+  color: rgb(var(--fg) / 0.98);
+  border: 1px solid rgb(var(--fg) / 0.16);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+}
+
+.glass-card:focus-visible {
+  outline: 2px solid rgb(var(--accent) / 0.85);
+  outline-offset: 2px;
+}

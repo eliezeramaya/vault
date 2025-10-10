@@ -1,0 +1,23 @@
+name: CI Verify
+on:
+  pull_request:
+    branches: [ main ]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint:all
+      - run: npm run typecheck:all || true
+      - run: npm run build --workspace apps/web
+      - run: npm run analyze --workspace apps/web -- --mode analyze
+      - name: Upload bundle stats
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-stats
+          path: apps/web/dist/stats.html

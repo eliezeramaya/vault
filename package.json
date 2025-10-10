@@ -6,12 +6,15 @@
     "apps/web"
   ],
   "scripts": {
+    "lint": "eslint . --ext .ts,.tsx,.js",
     "lint:all": "node ./scripts/lint-all.mjs",
     "typecheck:all": "node ./scripts/typecheck-all.mjs",
     "typecheck:strict:web": "npm run typecheck:strict --workspace apps/web",
     "build:all": "npm run build --workspace apps/web",
     "e2e:smoke": "npm run test:all --workspace apps/web -- --grep @smoke || echo 'smoke subset optional'",
     "analyze:bundle": "node ./scripts/analyze-bundle.mjs",
+    "audit": "npm audit --omit=dev || true",
+    "depcheck": "npx depcheck || true",
     "format": "prettier --write .",
     "ci:verify": "npm run lint:all && npm run typecheck:all && npm run build:all && npm run e2e:smoke"
   },
