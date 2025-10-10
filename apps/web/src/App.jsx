@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { safeStringGet, safeStringSet } from './lib/safeStorage'
-import { Sun, Moon, HelpCircle, MoreHorizontal } from 'lucide-react'
+import { HelpCircle, MoreHorizontal } from 'lucide-react'
+import ThemeToggle from './components/ThemeToggle'
+import { ThemeProvider } from './lib/theme'
 import { ErrorProvider } from './contexts/ErrorContext'
 import { useSafeStorage, useSafeOperation } from './hooks/useSafeOperations'
 import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardNavigation'
@@ -827,30 +829,7 @@ function AppContent() {
               <HelpCircle size={18} aria-hidden="true" />
             </button>
             {/* Theme toggle */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-              title={theme === 'dark' ? 'Modo claro (Ctrl+Shift+L)' : 'Modo oscuro (Ctrl+Shift+D)'}
-              style={{
-                background: 'transparent',
-                color: 'var(--text)',
-                border: '1px solid var(--surface-border)',
-                padding: '8px 10px',
-                minHeight: 36,
-                minWidth: 44,
-                borderRadius: 10,
-                fontWeight: 700,
-                cursor: 'pointer',
-                lineHeight: 1,
-              }}
-            >
-              {theme === 'dark' ? (
-                <Sun size={18} aria-hidden="true" />
-              ) : (
-                <Moon size={18} aria-hidden="true" />
-              )}
-            </button>
+            <ThemeToggle />
             {/* Profile mini */}
             <div
               style={{
@@ -1287,7 +1266,9 @@ export default function App() {
     <ErrorBoundary>
       <ErrorProvider>
         <FocusLoopProvider>
-          <AppContent />
+          <ThemeProvider>
+            <AppContent />
+          </ThemeProvider>
         </FocusLoopProvider>
       </ErrorProvider>
     </ErrorBoundary>
