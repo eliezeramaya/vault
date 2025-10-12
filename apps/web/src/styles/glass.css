@@ -1,3 +1,16 @@
+.glass-1 {
+  background: rgb(var(--glass) / var(--glass-alpha));
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  border: 1px solid rgb(var(--fg) / 0.08);
+  box-shadow: var(--shadow-glass);
+  border-radius: var(--radius-2xl);
+}
+.glass-2 {
+  /* hover/focus layer */
+  background: rgb(var(--glass) / calc(var(--glass-alpha) + 0.15));
+  border: 1px solid rgb(var(--fg) / 0.14);
+}
 .glass-card {
   background: rgb(var(--glass) / var(--glass-alpha));
   color: rgb(var(--fg) / 0.98);

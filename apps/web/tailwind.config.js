@@ -8,6 +8,10 @@ module.exports = {
         fg: 'rgb(var(--fg) / <alpha-value>)',
         accent: 'rgb(var(--accent) / <alpha-value>)',
         glass: 'rgb(var(--glass) / <alpha-value>)',
+        q1: 'rgb(var(--q1) / <alpha-value>)',
+        q2: 'rgb(var(--q2) / <alpha-value>)',
+        q3: 'rgb(var(--q3) / <alpha-value>)',
+        q4: 'rgb(var(--q4) / <alpha-value>)',
       },
       borderRadius: {
         xl: 'var(--radius-xl)',
