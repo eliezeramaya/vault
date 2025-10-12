@@ -8,25 +8,39 @@ import { useSafeStorage, useSafeOperation } from './hooks/useSafeOperations'
 import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardNavigation'
 import ErrorBoundary from './components/ErrorBoundary'
 import Globe from './features/map/Globe'
-// Lazy-load the heavy 3D map to reduce initial bundle on mobile
-const SphereMap = React.lazy(() => import('./features/map/SphereMap'))
+// Lazy-load the heavy 3D sphere map to reduce initial bundle on mobile
+// NOTE: File is under components/SphereMap.jsx
+const withRetry =
+  (loader, retries = 2, delayMs = 300) =>
+  () =>
+    loader().catch((err) => {
+      if (retries <= 0) throw err
+      return new Promise((resolve) => setTimeout(resolve, delayMs)).then(
+        withRetry(loader, retries - 1, delayMs)
+      )
+    })
+
+const SphereMap = React.lazy(withRetry(() => import('./components/SphereMap.jsx')))
 import FocusLoopBar from './features/focus/FocusLoopBar'
+import MatrixPage from './features/matrix/MatrixPage'
 import { FocusLoopProvider } from './features/focus/FocusLoopContext'
-const EisenhowerPanel = React.lazy(() => import('./features/matrix/EisenhowerPanel'))
+// Use retrying lazy imports to avoid transient fetch issues during dev HMR
+// (EisenhowerPanel was replaced by MatrixPage; keep helper available but do not import unused panel)
 import Welcome from './features/onboarding/Welcome'
 import Onboarding from './features/onboarding/Onboarding'
 import Preloader from './components/Preloader'
 import AddIslandSheet from './components/AddIslandSheet'
-const HomePanel = React.lazy(() => import('./components/HomePanel'))
-const SettingsPanel = React.lazy(() => import('./components/SettingsPanel'))
-const PomodoroPanel = React.lazy(() => import('./components/PomodoroPanel'))
-const WeeklyScorecard = React.lazy(() => import('./components/WeeklyScorecard'))
+const HomePanel = React.lazy(withRetry(() => import('./components/HomePanel.jsx')))
+const SettingsPanel = React.lazy(withRetry(() => import('./components/SettingsPanel.jsx')))
+const PomodoroPanel = React.lazy(withRetry(() => import('./components/PomodoroPanel.jsx')))
+const WeeklyScorecard = React.lazy(withRetry(() => import('./components/WeeklyScorecard.jsx')))
 import NotificationCenter from './components/NotificationCenter'
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp'
 import MobileTutorial from './components/MobileTutorial/MobileTutorial'
 import { useMobileTutorial } from './hooks/useMobileTutorial'
 import Sidebar from './features/navigation/Sidebar'
 import BottomNav from './features/navigation/BottomNav'
+import DiagnosticOverlay from './components/DiagnosticOverlay'
 
 // Stable theme options at module scope to avoid identity changes across renders
 const VALID_THEMES = ['light', 'dark']
@@ -102,6 +116,16 @@ function AppContent() {
     /* cleanup placeholder */
   }, [])
 
+  // Dev warm-up for large lazy modules that occasionally 404 during HMR reconnects
+  useEffect(() => {
+    if (import.meta?.env?.DEV) {
+      // Preload matrix panel so the first visit doesn’t race the server
+      import('./components/EisenhowerPanel.jsx').catch((e) => {
+        console.warn('Prefetch EisenhowerPanel failed (dev)', e)
+      })
+    }
+  }, [])
+
   // Detect embedded mode (?embed=1) so native apps can control nav and we hide web bottom bar
   useEffect(() => {
     try {
@@ -125,7 +149,8 @@ function AppContent() {
         if (savedTheme && VALID_THEMES.includes(savedTheme)) {
           setTheme(savedTheme)
           document.documentElement.setAttribute('data-theme', savedTheme)
-          return savedTheme
+          // Important: do NOT return a value here; returning a non-function breaks React cleanup
+          return undefined
         }
       } catch (error) {
         console.warn('Failed to read theme from localStorage:', error)
@@ -173,10 +198,13 @@ function AppContent() {
         const fallbackTheme = 'dark'
         setTheme(fallbackTheme)
         document.documentElement.setAttribute('data-theme', fallbackTheme)
+        return undefined
       }
     }
 
-    return initializeTheme()
+    const cleanup = initializeTheme()
+    // Ensure only a function (or nothing) is returned to React
+    return typeof cleanup === 'function' ? cleanup : undefined
   }, [])
 
   // Load initial view from localStorage (persist selected tab)
@@ -1020,6 +1048,8 @@ function AppContent() {
           position: 'relative',
           paddingTop: 0,
           paddingLeft: isNarrow ? 0 : sidebarOpen ? 260 : 86,
+          // Match header right gutter so content doesn't touch the edge
+          paddingRight: 'max(10px, env(safe-area-inset-right))',
           transition: 'padding-left .18s ease',
           paddingBottom:
             view === 'matrix' ||
@@ -1145,9 +1175,7 @@ function AppContent() {
           {view === 'matrix' && (
             <>
               <FocusLoopBar />
-              <React.Suspense fallback={<div style={{ padding: 16 }}>Cargando matriz…</div>}>
-                <EisenhowerPanel />
-              </React.Suspense>
+              <MatrixPage />
             </>
           )}
         </div>
@@ -1256,6 +1284,9 @@ function AppContent() {
 
       {/* Mobile Tutorial */}
       {showTutorial && <MobileTutorial onComplete={completeTutorial} onSkip={skipTutorial} />}
+
+      {/* Diagnostic Overlay (Ctrl+Shift+D) */}
+      <DiagnosticOverlay />
     </div>
   )
 }
