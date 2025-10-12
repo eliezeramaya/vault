@@ -2,14 +2,15 @@ import { test, expect } from '@playwright/test'
 import fs from 'fs/promises'
 import path from 'path'
 
-const outDir = path.resolve(__dirname, '..', '..', '..', 'docs', 'screenshots')
+// From apps/web working dir to repo docs/screenshots
+const outDir = path.resolve(process.cwd(), '../../docs/screenshots')
 
 async function ensureDir(p: string) {
   await fs.mkdir(p, { recursive: true })
 }
 
-test.describe('Matrix screenshots', () => {
-  test('capture dark and light variants', async ({ page, viewport }) => {
+test.describe('Matrix screenshots @smoke', () => {
+  test('capture dark and light variants @smoke', async ({ page, viewport }) => {
     await ensureDir(outDir)
 
     // Use a consistent desktop viewport
@@ -17,11 +18,26 @@ test.describe('Matrix screenshots', () => {
 
     // Helper to navigate directly to Matrix via hash
     const gotoMatrix = async () => {
-      await page.goto('/#matrix', { waitUntil: 'domcontentloaded' })
+      // Load page with matrix hash under configured baseURL
+      await page.goto('./#matrix', { waitUntil: 'networkidle' })
+      // Wait for app root to hydrate
+      await page.locator('#root').first().waitFor({ timeout: 15000 })
+      // If welcome dialog is present, click "Entrar a la Matriz"
+      const welcomeMatrixBtn = page.getByRole('button', { name: /Entrar a la Matriz/i })
+      if (await welcomeMatrixBtn.isVisible().catch(() => false)) {
+        await welcomeMatrixBtn.click()
+      }
+      // Switch to Matrix via visible tab
+      const tab = page.getByRole('tab', { name: /^Matriz$/ })
+      await tab
+        .first()
+        .click({ trial: false })
+        .catch(() => {})
       const panel = page.locator('#panel-matrix')
-      await expect(panel).toBeVisible({ timeout: 10_000 })
+      await panel.first().waitFor({ timeout: 15000 })
+      await expect(panel).toBeVisible({ timeout: 15_000 })
       // Give D3 layout a tick to settle and fonts to load
-      await page.waitForTimeout(400)
+      await page.waitForTimeout(600)
     }
 
     // DARK
