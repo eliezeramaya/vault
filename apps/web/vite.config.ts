@@ -5,8 +5,10 @@ import { visualizer } from 'rollup-plugin-visualizer'
 import { withBase } from '../../config/vite.base.mjs'
 
 export default withBase(
-  defineConfig(({ mode }) => ({
-    base: '/vault/',
+  defineConfig(({ command, mode }) => ({
+    // Use '/' during dev to avoid broken dynamic imports like '/vault/src/...'
+    // and '/vault/' for build/preview (GitHub Pages at /vault/)
+    base: command === 'serve' ? '/' : '/vault/',
     plugins: [
       react(),
       splitVendorChunkPlugin(),
@@ -47,7 +49,8 @@ export default withBase(
           ]
         : []),
     ],
-    server: { port: 3000, open: true },
+    server: { host: true, port: 3000, strictPort: true, open: false },
+    preview: { host: true, port: 4173, strictPort: true, open: false },
     build: {
       minify: 'esbuild',
       rollupOptions: {

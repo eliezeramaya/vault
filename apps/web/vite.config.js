@@ -1,14 +1,16 @@
-import { defineConfig } from 'vite'
+import { defineConfig, splitVendorChunkPlugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { withBase } from '../../config/vite.base.mjs'
 
 export default withBase(
-  defineConfig(({ mode }) => ({
-    base: '/vault/', // Es necesario para servir en Pages (GitHub Pages)
+  defineConfig(({ command, mode }) => ({
+    // Use '/' in dev to avoid dynamic import fetches at '/vault/src/...'; keep '/vault/' for prod/preview
+    base: command === 'serve' ? '/' : '/vault/',
     plugins: [
       react(),
+      splitVendorChunkPlugin(),
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
@@ -89,22 +91,26 @@ export default withBase(
     ],
     server: { port: 3000, open: true },
     build: {
+      minify: true,
+      target: 'es2018',
       rollupOptions: {
         output: {
           manualChunks(id) {
+            // Group large deps into coherent chunks for better caching
             if (id.includes('node_modules')) {
-              if (id.includes('react')) return 'vendor-react'
-              if (id.includes('three')) return 'vendor-three'
+              if (/(?:react|react-dom)[\\/]/.test(id)) return 'react'
+              if (/(?:three|framer-motion|d3|d3-hierarchy)[\\/]/.test(id)) return 'viz'
+              if (/(?:lucide-react)[\\/]/.test(id)) return 'ui'
               return 'vendor'
             }
-            if (id.includes('/features/matrix/')) return 'matrix-feature'
-            if (id.includes('/components/Pomodoro')) return 'pomodoro-feature'
+            // Example feature splits (keep if paths exist)
+            if (id.includes('/features/matrix/')) return 'feature-matrix'
+            if (id.includes('/components/Pomodoro')) return 'feature-pomodoro'
             return undefined
           },
           chunkFileNames: (chunkInfo) => {
             const n = chunkInfo.name
-            if (n.startsWith('vendor-react')) return 'vendor/react-[hash].js'
-            if (n.startsWith('vendor-three')) return 'vendor/three-[hash].js'
+            if (['react', 'viz', 'ui', 'vendor'].includes(n)) return `vendor/${n}-[hash].js`
             return 'chunks/[name]-[hash].js'
           },
           entryFileNames: 'entry/[name]-[hash].js',
