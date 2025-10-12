@@ -1,6 +1,39 @@
 module.exports = {
   root: true,
   env: { browser: true, es2022: true, node: true },
+  settings: { react: { version: 'detect' } },
+  parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+  extends: [
+    'eslint:recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:@typescript-eslint/recommended',
+    'prettier',
+  ],
+  plugins: ['react', 'react-hooks', '@typescript-eslint'],
+  ignorePatterns: ['dist', 'build', 'node_modules'],
+  overrides: [
+    {
+      files: ['**/*.ts', '**/*.tsx'],
+      parser: '@typescript-eslint/parser',
+      parserOptions: { project: false },
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'warn',
+      },
+    },
+    {
+      files: ['**/*.js', '**/*.jsx'],
+      rules: { 'no-undef': 'off' },
+    },
+    {
+      files: ['**/*.{test,spec}.ts?(x)'],
+      rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
+    },
+  ],
+}
+module.exports = {
+  root: true,
+  env: { browser: true, es2022: true, node: true },
   parserOptions: { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } },
   settings: { react: { version: 'detect' } },
   plugins: ['react', 'react-hooks', 'jsx-a11y'],

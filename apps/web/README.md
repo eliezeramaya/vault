@@ -11,7 +11,7 @@ Aplicación React + Vite con una matriz de Eisenhower “liquid‑glass”, acce
 
 ```bash
 npm ci
-npm run dev      # http://localhost:3000/vault/ (usar base)
+npm run dev      # http://localhost:3000/ (en desarrollo la base es '/')
 
 # Producción
 npm run build
@@ -20,13 +20,13 @@ npm run preview -- --port 4173 --strictPort   # http://localhost:4173/vault/
 
 ### Base path y rutas locales
 
-La app se sirve bajo la subruta `/vault/` (GitHub Pages). Por eso:
+La app se sirve bajo la subruta `/vault/` solo en producción (GitHub Pages). Para un DX más fiable, en desarrollo la `base` es `/`.
 
-- En `vite.config.js` se define `base: '/vault/'`.
-- Manifest PWA usa `start_url` y `scope` en `/vault/`.
-- En desarrollo: abrir `http://localhost:3000/vault/` (no la raíz) para que las rutas y assets relativos funcionen igual que en producción.
+- En `vite.config.js`: `base` es `/` cuando `vite` corre en modo `serve`, y `/vault/` en build/preview.
+- El manifest PWA usa `start_url` y `scope` en `/vault/` (producción).
+- En desarrollo: abrir `http://localhost:3000/`.
 - En preview (`npm run preview`): `http://localhost:4173/vault/`.
-- Playwright y tests E2E navegan a `/vault/` para replicar el entorno final.
+- Playwright y tests E2E apuntan a `/vault/` cuando prueban el build.
 
 Si cambias el base path deberás actualizar: `vite.config.js`, manifest PWA (`start_url`, `scope`), rutas en tests E2E y configuración de Pages.
 
@@ -79,7 +79,7 @@ Ejemplos de uso:
 ## Estructura principal
 
 - `src/App.jsx` — App shell, temas y navegación.
-- `src/features/matrix/EisenhowerPanel.jsx` — Lógica/visual de la matriz y notas.
+- `src/components/EisenhowerPanel.jsx` — Lógica/visual de la matriz y notas.
 - `src/features/focus/{FocusLoopContext.jsx, FocusLoopContext.test.jsx, FocusLoopBar.jsx}` — Contexto, tests y barra de foco.
 - `src/features/map/{Globe.jsx, SphereMap.jsx, HeatmapControls.jsx, EditIslandSheet.jsx}` — Visualización 2D/3D y HUD del mapa.
 - `src/features/navigation/Sidebar.jsx` — Menú lateral responsivo.
@@ -91,7 +91,7 @@ Ejemplos de uso:
 Importar por feature (ejemplos):
 
 ```js
-import EisenhowerPanel from './features/matrix/EisenhowerPanel'
+import EisenhowerPanel from './components/EisenhowerPanel.jsx'
 import { FocusLoopProvider } from './features/focus/FocusLoopContext'
 import FocusLoopBar from './features/focus/FocusLoopBar'
 import Globe from './features/map/Globe'
