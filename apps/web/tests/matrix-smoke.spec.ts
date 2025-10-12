@@ -15,9 +15,9 @@ async function enterMatrix(page: Page) {
 }
 
 const quickAdd = async (page: Page, text: string) => {
-  const input = page.getByPlaceholder('Añadir tarea rápida...')
+  const input = page.getByPlaceholder(/Agregar tarea/i)
   await input.fill(text)
-  await page.getByRole('button', { name: 'Añadir' }).click()
+  await page.getByRole('button', { name: /Agregar/i }).click()
   await expect(page.locator('.eh-note', { hasText: text })).toBeVisible()
 }
 
