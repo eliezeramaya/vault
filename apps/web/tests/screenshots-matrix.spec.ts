@@ -18,26 +18,24 @@ test.describe('Matrix screenshots @smoke', () => {
 
     // Helper to navigate directly to Matrix via hash
     const gotoMatrix = async () => {
-      // Load page with matrix hash under configured baseURL
-      await page.goto('./#matrix', { waitUntil: 'networkidle' })
-      // Wait for app root to hydrate
-      await page.locator('#root').first().waitFor({ timeout: 15000 })
-      // If welcome dialog is present, click "Entrar a la Matriz"
-      const welcomeMatrixBtn = page.getByRole('button', { name: /Entrar a la Matriz/i })
-      if (await welcomeMatrixBtn.isVisible().catch(() => false)) {
-        await welcomeMatrixBtn.click()
-      }
-      // Switch to Matrix via visible tab
-      const tab = page.getByRole('tab', { name: /^Matriz$/ })
-      await tab
-        .first()
-        .click({ trial: false })
-        .catch(() => {})
+      // Ensure matrix view preference to bypass onboarding
+      await page.addInitScript(() => {
+        try {
+          localStorage.setItem('view', 'matrix')
+        } catch {}
+      })
+      // Load page directly (baseURL already set to /vault/)
+      await page.goto('./', { waitUntil: 'networkidle', timeout: 30000 })
+      // Wait a bit for React hydration
+      await page.waitForTimeout(1000)
+      // Click Matrix tab (should be visible now that welcome is bypassed)
+      const matrixTab = page.getByRole('tab', { name: /Matriz/i })
+      await matrixTab.click({ timeout: 10000 })
+      // Wait for panel to be visible
       const panel = page.locator('#panel-matrix')
-      await panel.first().waitFor({ timeout: 15000 })
       await expect(panel).toBeVisible({ timeout: 15_000 })
-      // Give D3 layout a tick to settle and fonts to load
-      await page.waitForTimeout(600)
+      // Give D3 layout time to render
+      await page.waitForTimeout(1000)
     }
 
     // DARK

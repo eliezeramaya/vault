@@ -50,7 +50,15 @@ function AppContent() {
   const { safeSync } = useSafeOperation()
   const { showTutorial, completeTutorial, skipTutorial } = useMobileTutorial()
   const [theme, setTheme] = useState('dark') // 'dark' | 'light'
-  const [showWelcome, setShowWelcome] = useState(true)
+  const [showWelcome, setShowWelcome] = useState(() => {
+    // Don't show welcome if user already has a saved view preference
+    try {
+      const savedView = safeGetItem('view')
+      return !savedView
+    } catch {
+      return true
+    }
+  })
   const [showOb, setShowOb] = useState(false)
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [loadPct, setLoadPct] = useState(0)
