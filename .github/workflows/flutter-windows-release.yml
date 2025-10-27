@@ -23,7 +23,7 @@ jobs:
         working-directory: apps/flutter
         run: flutter build windows --release
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-release
           path: apps/flutter/build/windows/x64/runner/Release
